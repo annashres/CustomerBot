@@ -1,12 +1,14 @@
 {
-    "name": "maav-1",
-    "dependencies": {
-        "botbuilder": "^3.4.4",
-        "dotenv": "^2.0.0",
-        "restify": "^4.3.0"
-    },
-    "devDependencies": {
-        "@types/node": "^6.0.52",
-        "@types/restify": "^2.0.35"
-    }
+  "name": "maav-1",
+  "dependencies": {
+    "botbuilder": "^3.4.4",
+    "botbuilder-azure": "^3.0.2",
+    "dotenv": "^2.0.0",
+    "prettyjson": "^1.2.1",
+    "restify": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^6.0.52",
+    "@types/restify": "^2.0.35"
+  }
 }

@@ -4,7 +4,7 @@
     "parameters": {
         "botName": {
             "type": "string",
-            "defaultValue": "MAAV-1"
+            "defaultValue": "[concat('MAAV-1', uniqueString(subscription().subscriptionId))]"
         },
         "MicrosoftAppId": {
             "type": "securestring"
@@ -41,7 +41,7 @@
                         }
                     ]
                 }
-            }
+            }           
         }
     ]
 }
