@@ -1,0 +1,47 @@
+{
+    "contentVersion": "1.0.0.0",
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "parameters": {
+        "botName": {
+            "type": "string",
+            "defaultValue": "MAAV-1"
+        },
+        "MicrosoftAppId": {
+            "type": "securestring"
+        },
+        "MicrosoftAppPassword": {
+            "type": "securestring"
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('botName')]",
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp,botapp",
+            "apiVersion": "2016-03-01",
+            "location": "[variables('location')]",
+            "properties": {
+                "name": "[parameters('botName')]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                            "value": "6.5.0"
+                        },
+                        {
+                            "name": "MICROSOFT_APP_ID",
+                            "value": "[parameters('MicrosoftAppId')]"
+                        },
+                        {
+                            "name": "MICROSOFT_APP_PASSWORD",
+                            "value": "[parameters('MicrosoftAppPassword')]"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

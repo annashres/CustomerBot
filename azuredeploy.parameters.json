@@ -1,0 +1,30 @@
+{
+  "contentVersion": "1.0.0.0",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "parameters": 
+  {
+    "MicrosoftAppId": 
+    {
+      "reference": 
+      {
+        "keyvault": 
+        {
+          "id": "/subscriptions/d513e2e9-97db-40f6-8d1a-ab3b340cc81a/resourceGroups/BotTestingGroup/providers/Microsoft.KeyVault/vaults/Maav1Secrets"
+        },
+        "secretName": "BotFramework-AppId"
+      }
+    },
+    "MicrosoftAppPassword": 
+    {
+      "reference": 
+      {
+        "keyvault": 
+        {
+          "id": "/subscriptions/d513e2e9-97db-40f6-8d1a-ab3b340cc81a/resourceGroups/BotTestingGroup/providers/Microsoft.KeyVault/vaults/Maav1Secrets"
+        },
+        "secretName": "BotFramework-AppPassword"
+      }
+    }
+  }
+}
+
