@@ -1,0 +1,71 @@
+{
+    "contentVersion": "1.0.0.0",
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "parameters": {
+        "repoUrl": {
+            "type": "string",
+            "defaultValue": "https://ayobeko@bitbucket.org/ayobeko/maav-1.git"
+        },
+        "branch": {
+            "type": "string",
+            "defaultValue": "master"
+        }
+    },
+    "variables": {
+        "botName": "[concat('MAAV-1', uniqueString(resourceGroup().id, deployment().name))]",
+        "location": "[resourceGroup().location]",
+        "MicrosoftAppId": "508aea40-2084-47fb-abf4-31362eda473b",
+        "MicrosoftAppPassword": "jg2y2TdUAzSRcUX2mvu8kP4"
+    },
+    "resources": [
+        {
+            "name": "[variables('botName')]",
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp,botapp",
+            "apiVersion": "2016-03-01",
+            "location": "[variables('location')]",
+            "properties": {
+                "name": "[variables('botName')]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                            "value": "6.5.0"
+                        },
+                        {
+                            "name": "MICROSOFT_APP_ID",
+                            "value": "[variables('MicrosoftAppId')]"
+                        },
+                        {
+                            "name": "MICROSOFT_APP_PASSWORD",
+                            "value": "[variables('MicrosoftAppPassword')]"
+                        },
+                        {
+                            "name": "BotId",
+                            "value": "ayobottest"
+                        },
+                        {
+                            "name": "BotEnv",
+                            "value": "prod"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "apiVersion": "2016-03-01",
+                    "name": "web",
+                    "type": "sourcecontrols",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', variables('botName'))]"
+                    ],
+                    "properties": {
+                        "RepoUrl": "[parameters('repoUrl')]",
+                        "branch": "[parameters('branch')]",
+                        "IsManualIntegration": true
+                    }
+                }
+            ]
+        }
+    ]
+}
