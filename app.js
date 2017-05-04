@@ -5,13 +5,13 @@ require('dotenv').config();
 var useEmulator = (process.env.NODE_ENV == 'development');
 
 // Grab bot file 
-const bot = require('./bot.js');
+var bot = require('./bot.js');
 
 // Create a local API server if the environment is local dev machine
 if (useEmulator)
 {
-	const restify = require('restify');
-	const server = restify.createServer();
+	var restify = require('restify');
+	var server = restify.createServer();
 
 	server.listen(process.env.PORT, function()
 	{

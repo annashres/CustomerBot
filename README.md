@@ -6,25 +6,10 @@ This bot has been created using [Microsoft Bot Framework](https://dev.botframewo
 MAAV-1 is designed to record notes and insights from the conversations Microsoft employees have with customers. The goal is to make it easier to disseminate knowledge about Microsoft customers and win as a team.
 
 ## Bot Deployment
-**Deploy bot on Azure**
-1. Make sure you have [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed and configured on your local machine. 
+**Deploy bot automatically on Azure**  
+[![Deploy to Azure](http://azuredeploy.net/deploybutton.svg)](https://azuredeploy.net/)
 
-2. Open a command prompt window in the project directory. Run the following commands to deploy MAAV-1 to a resource group called `ExampleBotDeploymentGroup` in Azure. *Note this will not work in PowerShell, make sure to run in command prompt window*
-
-```azurecli
-az login
-
-az group create --name ExampleBotDeploymentGroup --location "West US"
-az group deployment create \
-    --name MAAV1Deployment \
-    --resource-group ExampleBotDeploymentGroup \
-    --template-file azuredeploy.json \
-    --parameters @azuredeploy.parameters.json
-```
-
-3. Add project files and repo to Bot service on Azure.
-
-**Deploy bot on local machine**
+**Deploy bot on local machine**  
 1. Make sure you have [node.js and npm](https://nodejs.org/en/) installed on your local machine. 
 
 2. Create a new file in the project directory called `.env`. This file will be used to setup environment variables that the bot will use to run.
@@ -33,17 +18,14 @@ az group deployment create \
 
 4. Modify the `.env` file to add the following: `NODE_ENV = development`. This sets up your local machine as a dev environment.
 
-5. Open a command prompt window in the project directory. You can now start the bot locally by running the following command:
+5. Open a command prompt window in the project directory. You can now start the bot locally by running `node app.js`
 
-```
-node app.js 
-```
+### Testing/Using the bot
 
-### Testing the bot
-**On Azure**
+**On Azure**  
 Use the chat window built into the Azure bot service to send and receive messages from MAAV-1
 
-**On local machine**
+**On local machine**  
 * Download the [bot framework emulator](https://download.botframework.com/bf-v3/tools/emulator/publish.htm)
 * Launch the emulator and use the chat window to send and receive messages from MAAV-1
 

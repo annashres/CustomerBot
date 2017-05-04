@@ -1,8 +1,8 @@
 "use strict";
-const builder = require('botbuilder');
-const azure_builder = require('botbuilder-azure');
+var builder = require('botbuilder');
+var azure_builder = require('botbuilder-azure');
 
-const connector = new builder.ChatConnector({
+var connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
@@ -15,8 +15,8 @@ bot.dialog('/firstRun',
 [
     function (session)
     {
-        const botName = 'MAAV-1';
-        const description = `I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.`;
+        var botName = 'MAAV-1';
+        var description = `I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.`;
 
         session.send(`Hi there! I'm ${botName}`);
         session.send(`In a nutshell, here's what I do:\n\n${description}`);
