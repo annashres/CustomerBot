@@ -4,7 +4,7 @@
     "parameters": {
         "repoUrl": {
             "type": "string",
-            "defaultValue": "https://ayobeko@bitbucket.org/ayobeko/maav-1.git"
+            "defaultValue": "https://github.com/annashres/CustomerBot.git/"
         },
         "branch": {
             "type": "string",
@@ -13,9 +13,7 @@
     },
     "variables": {
         "botName": "[concat('MAAV-1', uniqueString(resourceGroup().id, deployment().name))]",
-        "location": "[resourceGroup().location]",
-        "MicrosoftAppId": "508aea40-2084-47fb-abf4-31362eda473b",
-        "MicrosoftAppPassword": "jg2y2TdUAzSRcUX2mvu8kP4"
+        "location": "[resourceGroup().location]"
     },
     "resources": [
         {
@@ -31,18 +29,6 @@
                         {
                             "name": "WEBSITE_NODE_DEFAULT_VERSION",
                             "value": "6.5.0"
-                        },
-                        {
-                            "name": "MICROSOFT_APP_ID",
-                            "value": "[variables('MicrosoftAppId')]"
-                        },
-                        {
-                            "name": "MICROSOFT_APP_PASSWORD",
-                            "value": "[variables('MicrosoftAppPassword')]"
-                        },
-                        {
-                            "name": "BotId",
-                            "value": "ayobottest"
                         },
                         {
                             "name": "BotEnv",
