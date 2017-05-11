@@ -2,6 +2,12 @@
     "contentVersion": "1.0.0.0",
     "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
     "parameters": {
+        "AppId": {
+            "type": "string"
+        },
+        "AppPassword": {
+            "type": "string"
+        },
         "repoUrl": {
             "type": "string",
             "defaultValue": "https://github.com/annashres/CustomerBot.git/"
@@ -12,7 +18,7 @@
         }
     },
     "variables": {
-        "botName": "[concat('MAAV-1', uniqueString(resourceGroup().id, deployment().name))]",
+        "botName": "[concat('MAAV1_', uniqueString(resourceGroup().id, deployment().name))]",
         "location": "[resourceGroup().location]"
     },
     "resources": [
@@ -31,8 +37,20 @@
                             "value": "6.5.0"
                         },
                         {
-                            "name": "BotEnv",
-                            "value": "prod"
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~1"
+                        },
+                        {
+                            "name": "NODE_ENV",
+                            "value": "production"
+                        },
+                        {
+                            "name": "BotId",
+                            "value": "[variables('botName')]"
+                        },
+                        {
+                            "name": "SCM_POST_DEPLOYMENT_ACTIONS_PATH",
+                            "value": "PostDeploymentScripts"
                         }
                     ]
                 }
