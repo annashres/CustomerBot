@@ -6,9 +6,35 @@ var connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
+var Connection = require('tedious').Connection;
+var Request = require('tedious').Request;
+var TYPES = require('tedious').TYPES;
+
+// Create connection to database
+var config = {
+  userName: 'sa', // update me
+  password: 'HelsinkiPM900', // update me
+  server: 'localhost', // update me
+  options: {
+      database: 'test' //update me
+  }
+}
+var connection = new Connection(config);
+
+// Attempt to connect and execute queries if connection goes through
+connection.on('connect', function(err) {
+    if (err) {
+        console.log(err)
+    }
+    else{
+        console.log('connected')
+    }
+});
+
 
 // Create chat bot
 var bot = new builder.UniversalBot(connector);
+
 
 //Add first run dialog
 bot.dialog('/firstRun',
@@ -84,8 +110,9 @@ bot.dialog('/dataEntry',
         session.userData.tags = results.response;
         var conversationNotes = JSON.stringify(session.userData);
         session.send("That's all I need. Thanks for sending this info:");
-        session.send("%s", conversationNotes);
         session.endDialog();
+
+        
     }
 ]);
 
