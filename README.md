@@ -18,7 +18,9 @@ MAAV-1 is designed to record notes and insights from the conversations Microsoft
 
 4. Modify the `.env` file to add the following: `NODE_ENV = development`. This sets up your local machine as a dev environment.
 
-5. Open a command prompt window in the project directory. You can now start the bot locally by running `node app.js`
+5. Run `npm install` in the bot directory to install required dependencies.
+
+6. Open a command prompt window in the project directory. You can now start the bot locally by running `node app.js`
 
 ### Testing/Using the bot
 

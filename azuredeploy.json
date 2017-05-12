@@ -2,9 +2,15 @@
     "contentVersion": "1.0.0.0",
     "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
     "parameters": {
+        "AppId": {
+            "type": "string"
+        },
+        "AppPassword": {
+            "type": "string"
+        },
         "repoUrl": {
             "type": "string",
-            "defaultValue": "https://ayobeko@bitbucket.org/ayobeko/maav-1.git"
+            "defaultValue": "https://github.com/annashres/CustomerBot.git/"
         },
         "branch": {
             "type": "string",
@@ -12,10 +18,8 @@
         }
     },
     "variables": {
-        "botName": "[concat('MAAV-1', uniqueString(resourceGroup().id, deployment().name))]",
-        "location": "[resourceGroup().location]",
-        "MicrosoftAppId": "508aea40-2084-47fb-abf4-31362eda473b",
-        "MicrosoftAppPassword": "jg2y2TdUAzSRcUX2mvu8kP4"
+        "botName": "[concat('MAAV1_', uniqueString(resourceGroup().id, deployment().name))]",
+        "location": "[resourceGroup().location]"
     },
     "resources": [
         {
@@ -33,20 +37,20 @@
                             "value": "6.5.0"
                         },
                         {
-                            "name": "MICROSOFT_APP_ID",
-                            "value": "[variables('MicrosoftAppId')]"
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~1"
                         },
                         {
-                            "name": "MICROSOFT_APP_PASSWORD",
-                            "value": "[variables('MicrosoftAppPassword')]"
+                            "name": "NODE_ENV",
+                            "value": "production"
                         },
                         {
                             "name": "BotId",
-                            "value": "ayobottest"
+                            "value": "[variables('botName')]"
                         },
                         {
-                            "name": "BotEnv",
-                            "value": "prod"
+                            "name": "SCM_POST_DEPLOYMENT_ACTIONS_PATH",
+                            "value": "PostDeploymentScripts"
                         }
                     ]
                 }
