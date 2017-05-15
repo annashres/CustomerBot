@@ -36,7 +36,6 @@ bot.dialog('/firstRun',
 
         session.send(`Hi there! I'm ${botName}`);
         session.send(`In a nutshell, here's what I do:\n\n${description}`);
-
         builder.Prompts.text(session, `What's your name?`);
     },
     function (session, results)
@@ -100,23 +99,7 @@ bot.dialog('/dataEntry',
         session.userData.tags = results.response;
         session.send("That's all I need.");
         
-        var outputCard = new builder.Message(session)
-        .addAttachment(
-        {
-            "contentType": "application/vnd.microsoft.card.adaptive",
-            "content": {
-                "type": "AdaptiveCard",
-                "body": 
-                [{
-                    "type": "TextBlock",
-                    "text": "Adaptive Card design session",
-                    "size": "large",
-                   "weight": "bolder"
-                }]
-            }
-        });
-        session.send(outputCard);
-        //session.beginDialog('/conversationCard');
+        session.beginDialog('/conversationCard');
     } 
 ]);
 
@@ -124,12 +107,16 @@ bot.dialog('/dataEntry',
 bot.dialog('/conversationCard', [
     function(session, args, next)
     {
-        session.send("Please confirm the information below is accurate");
-        var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + session.userData.contact + " today where you discussed about how " + session.userData.product + " is used at " + session.userData.company + "</s><voice gender = \"female\"></voice>"
-        var header = "Conversation with " + session.userData.company
-        var authors = session.userData.name + ", " + session.userData.authors
+        // Show the details that were entered if available
+        if (!session.message.value)
+        {
+            session.send("Please confirm the information below is accurate");
+                
+            var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + session.userData.contact + " today where you discussed about how " + session.userData.product + " is used at " + session.userData.company + "</s><voice gender = \"female\"></voice>"
+            var header = "Conversation with " + session.userData.company
+            var authors = session.userData.name + ", " + session.userData.authors
 
-        var outputCard = new builder.Message(session)
+            var outputCard = new builder.Message(session)
             .addAttachment({
                 contentType: "application/vnd.microsoft.card.adaptive",
                 content:
@@ -143,122 +130,93 @@ bot.dialog('/conversationCard', [
                             "text": header,
                             "size": "large",
                             "weight": "bolder"
-                        }]//,
-                    //     {
-                    //         "type": "ColumnSet",
-                    //         "separation": "strong",
-                    //         "columns":
-                    //         [
-                    //             {
-                    //                 "type": "Column",
-                    //                 "size": "auto",
-                    //                 "items":
-                    //                 [
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": "Company:",
-                    //                         "weight": "bolder"
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": "Author(s):",
-                    //                         "weight": "bolder"
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": "Customer contact(s):",
-                    //                         "weight": "bolder"
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": "Product(s) discussed:",
-                    //                         "weight": "bolder"
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": "Tags:",
-                    //                         "weight": "bolder"
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": "Notes:",
-                    //                         "weight": "bolder"
-                    //                     }
-                    //                 ]
-                    //             },
-                    //             {
-                    //                 "type": "Column",
-                    //                 "size": "auto",
-                    //                 "items":
-                    //                 [
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": session.userData.company
+                        },
+                        {
+                            "type": "FactSet",
+                            "facts":
+                            [
+                                {
+                                    "title": "Company:",
+                                    "value": session.userData.company
+                                },
+                                {
+                                    "title": "Author(s):",
+                                    "value": authors
+                                },
+                                {
+                                    "title": "Customer contact(s):",
+                                    "value": session.userData.contact
+                                },
+                                {
+                                    "title": "Product(s) discussed:",
+                                    "value": session.userData.product
+                                },
+                                {
+                                    "title": "Tags:",
+                                    "value": session.userData.tags
+                                },
+                                {
+                                    "title": "Notes:",
+                                    "value": session.userData.notes
+                                }
 
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": authors
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": session.userData.contact
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": session.userData.product
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": session.userData.tags
-                    //                     },
-                    //                     {
-                    //                         "type": "TextBlock",
-                    //                         "text": session.userData.notes,
-                    //                         "wrap": "true"
-                    //                     }
-                    //                 ]
-                    //             }
-                    //         ]
-                    //     }
-                    // ]//,
-                    // actions:
-                    // [
-                    //     {
-                    //         "type": "Action.ShowCard",
-                    //         "title": "Edit conversation",
-                    //         "card":
-                    //         {
-                    //             "type": "AdaptiveCard",
-                    //             "body":
-                    //             [
-                    //                 {
-                    //                     "type": "Input.Text",
-                    //                     "id": "comment",
-                    //                     "isMultiline": true,
-                    //                     "placeholder": "Enter your change here. E.g. Product: MySql DB"
-                    //                 }
-                    //             ],
-                    //             "actions": 
-                    //             [
-                    //                 {
-                    //                     "type": "Action.Submit",
-                    //                     "title": "OK",
-                    //                     "data": {"message": "edit"}
-                    //                 }
-                    //             ]
-                    //         }
-                    //     },
-                    //     {
-                    //         "type": "Action.Submit",
-                    //         "title": "Confirm",
-                    //         "data": { "message" : "confirm"}  
-                    //     }
-                    // ]
+                            ]
+                        }                 
+                    ],
+                    actions:
+                    [
+                        {
+                            "type": "Action.ShowCard",
+                            "title": "Edit conversation",
+                            "card":
+                            {
+                                "type": "AdaptiveCard",
+                                "body":
+                                [
+                                    {
+                                        "type": "Input.Text",
+                                        "id": "comment",
+                                        "isMultiline": true,
+                                        "placeholder": "Enter your change here. E.g. Product: MySql DB"
+                                    }
+                                ],
+                                "actions": 
+                                [
+                                    {
+                                        "type": "Action.Submit",
+                                        "title": "OK",
+                                        "data": {"message": "edit"}
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Action.Submit",
+                            "title": "Confirm",
+                            "data": { "message" : "confirm"}  
+                        }
+                    ]
                 }
             });
 
-        session.send(outputCard)
+            session.send(outputCard);
+        }
+        
+        if ((session.message) && (session.message.value))
+        {
+            var response = session.message.value;
+            
+            if (response.message === "edit")
+                session.replaceDialog('/editConversation');
+            else if (response.message === "confirm")
+                session.replaceDialog('/confirm');
+            else
+            {
+                session.message.value = null;
+                session.send("Did not understand that response");
+            }    
+        }
+
     }
 ]);
 
@@ -266,20 +224,30 @@ bot.dialog('/conversationCard', [
 bot.dialog('/editConversation', [
     function (session, args, next)
     {
-        session.send('You sent: %s', JSON.stringify(args));
+        var inputMessage = session.message.value.comment
+
+        inputMessage = inputMessage.split(':');
+        var inputTag = inputMessage[0];
+        var inputValue = inputMessage[1];
+
+        
+        session.send("Updating '%s' entry", inputTag);
+        session.userData[inputTag] = inputValue;
+        session.message.value = null;
+        console.log(session.userData);
+
         session.beginDialog('/conversationCard');
     }
-]).triggerAction({ matches: /^edit$/});
+]);
 
 // End dialog
 bot.dialog('/confirm', [
     function (session, args, next)
     {
-        session.send("You sent: %s", JSON.stringify(args))
         session.send("Goodbye now")
         session.endDialog();
     }
-]).triggerAction({ matches: /^confirm$/});
+]);
 
 //Help dialog
 bot.dialog('/help', [
