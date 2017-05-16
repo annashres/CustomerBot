@@ -1,7 +1,39 @@
 "use strict";
 var builder = require('botbuilder');
 var azure_builder = require('botbuilder-azure');
+var Sequelize = require('sequelize');
 
+var userName = 'sa';
+var password = PASSWORD; 
+var hostName = 'localhost';
+var sampleDbName = DATABASE;
+
+var sampleDb = new Sequelize(sampleDbName, userName, password, {
+    dialect: 'mssql',
+    host: hostName,
+    port: 1433, // Default port
+    logging: false, // disable logging; default: console.log
+
+    dialectOptions: {
+        requestTimeout: 30000 // timeout = 30 seconds
+    }
+});
+
+// Define the 'Feedback' model
+var Feedback = sampleDb.define('feedback', {
+    Name: Sequelize.STRING,
+    Authors: Sequelize.STRING,
+    Company: Sequelize.STRING,
+    Contact: Sequelize.STRING,
+    Product: Sequelize.STRING,
+    Notes: Sequelize.STRING,
+    Tags: Sequelize.STRING
+});
+
+sampleDb.sync()
+.then(function() {
+    console.log('\nCreated database schema from model.');
+})
 var connector = new builder.ChatConnector({
     appId: process.env.MicrosoftAppId,
     appPassword: process.env.MicrosoftAppPassword
@@ -208,8 +240,14 @@ bot.dialog('/conversationCard', [
             
             if (response.message === "edit")
                 session.replaceDialog('/editConversation');
-            else if (response.message === "confirm")
+            else if (response.message === "confirm"){
                 session.replaceDialog('/confirm');
+                Feedback.create({Name: session.userData.name, Authors: session.userData.authors, Company: session.userData.company, Contact: session.userData.contact, Product: session.userData.product, Notes: session.userData.notes, Tags: session.userData.tags}).then(feedback => {
+                console.log(feedback.get({
+                    plain: true
+                }))
+                });
+            }
             else
             {
                 session.message.value = null;
