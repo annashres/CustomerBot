@@ -7,6 +7,7 @@ MAAV-1 is designed to record notes and insights from the conversations Microsoft
 
 ## Bot Deployment
 **Deploy bot automatically on Azure**  
+
 [![Deploy to Azure](http://azuredeploy.net/deploybutton.svg)](https://azuredeploy.net/)
 
 **Deploy bot on local machine**  
@@ -16,7 +17,7 @@ MAAV-1 is designed to record notes and insights from the conversations Microsoft
 
 3. Copy the contents of the `.env.defaults` file into the `.env` file.
 
-4. Modify the `.env` file to add the following: `NODE_ENV = development`. This sets up your local machine as a dev environment.
+4. Modify the `.env` file to add the following: `NODE_ENV = development`. This sets up your local machine as a dev environment. You can additionally add database connection info to this file to have the bot save feedback to a database.
 
 5. Run `npm install` in the bot directory to install required dependencies.
 
@@ -33,13 +34,19 @@ Use the chat window built into the Azure bot service to send and receive message
 
 ### Structure
 
-`app.js` references the bot and starts a [Restify](http://restify.com/) server. `bot.js` has a simple multi-turn dialog which sends the name and description of the bot, and then asks the user for their name.
+`app.js` exposes the bot via an Azure function app. Alternatively, it starts a [Restify](http://restify.com/) server on a local machine. 
+
+`bot.js` is the core bot code. It uses the Microsoft bot framework and the bot builder library to collect information.
 
 `host.json` and `function.json` are required configuration files needed to setup the bot framework on an Azure function app.
 
 `package.json` holds metadata relevant to the project including its list of dependencies.
 
-`azuredeploy.json` and `azuredeploy.parameters.json` hold the Azure Resource Manager template and configuration info needed to deploy the MAAV-1 bot to Azure.
+`azuredeploy.json` stores the Azure Resource Manager template and configuration info needed to deploy the MAAV-1 bot to Azure.
+
+`PostDeploymentScripts` contains a bash script that setups the bot environment with appropriate environment variables and node modules once it is deployed on Azure.
+
+`.env.defaults` is the template for the `.env` file that should be created if testing/working on a local machine.
 
 
 ### Configuring the bot

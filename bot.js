@@ -1,11 +1,28 @@
 "use strict";
 var builder = require('botbuilder');
 var azure_builder = require('botbuilder-azure');
+var db_connection = require('tedious').Connection;
+var db_request = require('tedious').Request;
+var db_types = require('tedious').TYPES;
 
+
+// Create connection to chatbot
 var connector = new builder.ChatConnector({
     appId: process.env.MicrosoftAppId,
     appPassword: process.env.MicrosoftAppPassword
 });
+
+
+// Create connection to database
+var db_config = {
+  userName: process.env.DB_ADMIN,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER,
+  options: {
+      database: process.env.DB_NAME,
+      encrypt: true
+  }
+}
 
 // Create chat bot
 var bot = new builder.UniversalBot(connector);
@@ -41,9 +58,10 @@ bot.dialog('/firstRun',
     function (session, results)
     {
         session.userData.name = results.response
-        session.endDialog("Nice to meet you %s. I'm now going to ask you questions to record your customer conversation ...", session.userData.name); 
-        session.beginDialog('/dataEntry');
+        session.send("Nice to meet you %s.", session.userData.name); 
+        session.beginDialog('/EntrySelection');
     }
+   
 ]);
 
 // Main dialog loop
@@ -56,14 +74,54 @@ bot.dialog('/', [
         }
         else
         {
-            session.send("Welcome back %s! I'm guessing you have a new customer conversation for me. I'm going to ask you questions now to record your customer conversation ...", session.userData.name);
-            session.beginDialog('/dataEntry');
+            session.send("Welcome back %s! I'm guessing you have a new customer conversation for me.", session.userData.name);
+            session.message.text = null;
+            session.beginDialog('/EntrySelection');
         }
     }
 ]);
 
-// Data entry dialog
-bot.dialog('/dataEntry',
+// Entry selection dialog
+bot.dialog('/EntrySelection', 
+[
+    function(session, args, next)
+    {
+        if (!session.message.text)
+        {
+            var dataEntrySelection = new builder.ThumbnailCard(session)
+                .title('How would you like to record your customer conversation?')
+                .buttons([
+                    builder.CardAction.imBack(session, "Interactive Entry", "Interactive Entry"),
+                    builder.CardAction.imBack(session, "Batch Entry", "Batch Entry")
+                ]);
+            session.send(new builder.Message(session).addAttachment(dataEntrySelection));
+        }
+        else
+        {
+            var selection = session.message.text;
+
+            if (selection === 'Interactive Entry')
+            {
+                session.message.text = null;
+                session.replaceDialog('/interactiveDataEntry')
+            }
+            else if (selection === 'Batch Entry')
+            {
+                session.message.text = null;
+                session.replaceDialog('/batchDataEntry');
+            }
+            else
+            {
+                session.send("Did not understand selection '%s'", selection);
+                session.message.text = null;
+            }
+        }
+    }
+
+]);
+
+// Interactive entry dialog
+bot.dialog('/interactiveDataEntry',
 [
     function (session)
     {
@@ -101,6 +159,15 @@ bot.dialog('/dataEntry',
         
         session.beginDialog('/conversationCard');
     } 
+]);
+
+// Batch entry dialog
+bot.dialog('/batchDataEntry',
+[
+    function(session)
+    {
+        session.endDialog("Function not yet implemented");
+    }
 ]);
 
 // Confirm data entry dialog
@@ -244,7 +311,47 @@ bot.dialog('/editConversation', [
 bot.dialog('/confirm', [
     function (session, args, next)
     {
-        session.send("Goodbye now")
+        
+        var feedbackObject = new Object();
+        feedbackObject.name = session.userData.name;
+        feedbackObject.authors = session.userData.authors;
+        feedbackObject.company = session.userData.company;
+        feedbackObject.contact = session.userData.contact;
+        feedbackObject.product = session.userData.product;
+        feedbackObject.notes = session.userData.notes;
+        feedbackObject.tags = session.userData.tags;
+
+        //Write feedback to database if available
+        if (db_config.server)
+        {
+            // Create connection to database if available
+            var db_session = new db_connection(db_config);
+
+            // Connect 
+            db_session.on('connect', function(err) {
+                if (err) {
+                    console.log(err)
+                }
+                else{
+                    console.log('connected')
+                }
+            });
+
+            // Construct SQL query
+            var db_query = new db_request('createFeedback', function(err)
+            {
+                if (err){ console.log(err); }
+
+            });
+            db_query.addParameter('feedbackObject', TYPES.NVarChar, feedbackObject);
+
+            //Exedute query
+            db_session.callProcedure(db_query);
+            db_session.close();
+                
+        }
+
+        session.send("Your conversation has been recorded. Bye for now")
         session.endDialog();
     }
 ]);

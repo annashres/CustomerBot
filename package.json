@@ -4,7 +4,8 @@
     "botbuilder": "^3.4.4",
     "botbuilder-azure": "^3.0.2",
     "dotenv": "^2.0.0",
-    "restify": "^4.3.0"
+    "restify": "^4.3.0",
+    "tedious": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "^6.0.52",
