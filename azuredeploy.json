@@ -45,8 +45,20 @@
                             "value": "production"
                         },
                         {
+                            "name": "MicrosoftAppId",
+                            "value": "[parameters('AppId')]"
+                        },
+                        {
+                            "name": "MicrosoftAppPassword",
+                            "value": "[parameters('AppPassword')]"
+                        },  
+                        {   
                             "name": "BotId",
                             "value": "[variables('botName')]"
+                        },
+                        {
+                            "name": "BotEnv",
+                            "value": "prod"
                         },
                         {
                             "name": "SCM_POST_DEPLOYMENT_ACTIONS_PATH",
