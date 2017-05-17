@@ -1,64 +1,54 @@
 "use strict";
 var builder = require('botbuilder');
 var azure_builder = require('botbuilder-azure');
+var Sequelize = require('sequelize');
 
-// var db_connection = require('tedious').Connection;
-// var db_request = require('tedious').Request;
-// var db_types = require('tedious').TYPES;
+//Create connection to database
+if (process.env.DB_SERVER)
+{
+    var db_connection = new Sequelize(process.env.DB_NAME, process.env.DB_ADMIN, process.env.DB_PASSWORD,
+    {
+        dialect: 'mssql',
+        host: process.env.DB_SERVER,
+        port: 1433,
+        logging: false,
 
+        dialectOptions: {
+            requestTimeout: 30000, //timeout = 30 seconds
+            encrypt: true
+        }
+    });
 
-// Create connection to chatbot
-// var Sequelize = require('sequelize');
+    // Check database connection
+    db_connection.authenticate()
+        .then(function(){console.log("Connection to '" + process.env.DB_NAME + "' database has been established successfully.");})
+        .catch(function (err){console.log("Unable to connect to the database:", err);})
+        .done();
+   
+    //Define 'feedback' model
+    var Feedback = db_connection.define('feedback',{
+        Name: Sequelize.STRING,
+        Authors: Sequelize.STRING,
+        Company: Sequelize.STRING,
+        Contact: Sequelize.STRING,
+        Product: Sequelize.STRING,
+        Notes: Sequelize.STRING,
+        Tags: Sequelize.STRING
+    });
 
-// var userName = 'sa';
-// var password = PASSWORD; 
-// var hostName = 'localhost';
-// var sampleDbName = DATABASE;
+    db_connection.sync().then(function()
+    {
+        console.log("Created database shema from 'feedback' model");
+    });
+}
 
-// var sampleDb = new Sequelize(sampleDbName, userName, password, {
-//     dialect: 'mssql',
-//     host: hostName,
-//     port: 1433, // Default port
-//     logging: false, // disable logging; default: console.log
-
-//     dialectOptions: {
-//         requestTimeout: 30000 // timeout = 30 seconds
-//     }
-// });
-
-// // Define the 'Feedback' model
-// var Feedback = sampleDb.define('feedback', {
-//     Name: Sequelize.STRING,
-//     Authors: Sequelize.STRING,
-//     Company: Sequelize.STRING,
-//     Contact: Sequelize.STRING,
-//     Product: Sequelize.STRING,
-//     Notes: Sequelize.STRING,
-//     Tags: Sequelize.STRING
-// });
-
-// sampleDb.sync()
-// .then(function() {
-//     console.log('\nCreated database schema from model.');
-// })
+// Create connection to chat bot
 var connector = new builder.ChatConnector({
     appId: process.env.MicrosoftAppId,
     appPassword: process.env.MicrosoftAppPassword
 });
 
-
-// Create connection to database
-var db_config = {
-  userName: process.env.DB_ADMIN,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
-  options: {
-      database: process.env.DB_NAME,
-      encrypt: true
-  }
-}
-
-// Create chat bot
+// Create chat bot instance
 var bot = new builder.UniversalBot(connector);
 
 // Welcome message
@@ -186,7 +176,7 @@ bot.dialog('/interactiveDataEntry',
     },
     function (session, results)
     {
-        session.userData.product = results.response.entity;
+        session.conversationData.product = results.response.entity;
         builder.Prompts.text(session, "Please paste in below any notes you took down during the call");
     },
     function (session, results)
@@ -215,7 +205,10 @@ bot.dialog('/batchDataEntry',
         if(!session.conversationData.templateDisplayed)
         {
             var feedbackTemplate = "Enter your conversation using the following template: \n\n";
-            //feedbackTemplate+= "@maav1: \n\n";
+           
+            if (session.message.address.channelId === "email")
+                feedbackTemplate+= "@maav1: \n\n";
+            
             feedbackTemplate+= "**Authors:** {Microsoft alias}, {Microsoft alias} \n\n";
             feedbackTemplate+= "**Company:** {company name} \n\n";
             feedbackTemplate+= "**Contact:** {customer contact name} \n\n";
@@ -376,10 +369,7 @@ bot.dialog('/conversationCard', [
             if (response.message === "edit")
                 session.replaceDialog('/editConversation');
             else if (response.message === "confirm"){
-                session.replaceDialog('/confirm');
-                // Feedback.create({Name: session.userData.name, Authors: session.conversationData.authors, Company: session.conversationData.company, Contact: session.conversationData.contact, Product: session.userData.product, Notes: session.conversationData.notes, Tags: session.conversationData.tags}).then(feedback => {
-                // console.log(feedback.get({ plain: true}))
-                // });
+                session.replaceDialog('/confirm');                
             }
             else
             {
@@ -415,44 +405,22 @@ bot.dialog('/editConversation', [
 bot.dialog('/confirm', [
     function (session, args, next)
     {
-        
-        var feedbackObject = new Object();
-        feedbackObject.name = session.userData.name;
-        feedbackObject.authors = session.conversationData.authors;
-        feedbackObject.company = session.conversationData.company;
-        feedbackObject.contact = session.conversationData.contact;
-        feedbackObject.product = session.userData.product;
-        feedbackObject.notes = session.conversationData.notes;
-        feedbackObject.tags = session.conversationData.tags;
+     
+        session.sendTyping();
 
-        //Write feedback to database if available
-        if (db_config.server)
+        //Write feedback to database (if connected)
+        if (process.env.DB_SERVER)
         {
-            // Create connection to database if available
-            var db_session = new db_connection(db_config);
-
-            // Connect 
-            db_session.on('connect', function(err) {
-                if (err) {
-                    console.log(err)
-                }
-                else{
-                    console.log('connected')
-                }
-            });
-
-            // Construct SQL query
-            var db_query = new db_request('createFeedback', function(err)
-            {
-                if (err){ console.log(err); }
-
-            });
-            db_query.addParameter('feedbackObject', TYPES.NVarChar, feedbackObject);
-
-            //Exedute query
-            db_session.callProcedure(db_query);
-            db_session.close();
-                
+            Feedback.create({
+                Name: session.userData.name,
+                Authors: session.conversationData.authors,
+                Company: session.conversationData.company,
+                Contact: session.conversationData.contact,
+                Product: session.conversationData.product,
+                Notes: session.conversationData.notes,
+                Tags: session.conversationData.tags
+            }).then(feedback => {console.log(feedback.get({plain: true}))});
+            //db_connection.close();
         }
 
         session.send("Your conversation has been recorded. Bye for now")
