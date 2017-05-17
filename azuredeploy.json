@@ -18,7 +18,7 @@
         }
     },
     "variables": {
-        "botName": "[concat('MAAV1_', uniqueString(resourceGroup().id, deployment().name))]",
+        "botName": "[concat('MAAV1-', uniqueString(resourceGroup().id, deployment().name))]",
         "location": "[resourceGroup().location]"
     },
     "resources": [
