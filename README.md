@@ -19,9 +19,11 @@ MAAV-1 is designed to record notes and insights from the conversations Microsoft
 
 4. Modify the `.env` file to add the following: `NODE_ENV = development`. This sets up your local machine as a dev environment. You can additionally add database connection info to this file to have the bot save feedback to a database.
 
-5. Run `npm install` in the bot directory to install required dependencies.
+5. Modify the `.env` file to add details about your database login by editing the `DB_ADMIN`, `DB_PASSWORD`, `DB_SERVER`, and `DB_NAME` variables. You can leave these fields blank if you don't require the bot to save conversation details to a database.
 
-6. Open a command prompt window in the project directory. You can now start the bot locally by running `node app.js`
+6. Run `npm install` in the bot directory to install required dependencies.
+
+7. Open a command prompt window in the project directory. You can now start the bot locally by running `node app.js`
 
 ### Testing/Using the bot
 
