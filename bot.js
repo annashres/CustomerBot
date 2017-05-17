@@ -1,12 +1,46 @@
 "use strict";
 var builder = require('botbuilder');
 var azure_builder = require('botbuilder-azure');
-var db_connection = require('tedious').Connection;
-var db_request = require('tedious').Request;
-var db_types = require('tedious').TYPES;
+
+// var db_connection = require('tedious').Connection;
+// var db_request = require('tedious').Request;
+// var db_types = require('tedious').TYPES;
 
 
 // Create connection to chatbot
+// var Sequelize = require('sequelize');
+
+// var userName = 'sa';
+// var password = PASSWORD; 
+// var hostName = 'localhost';
+// var sampleDbName = DATABASE;
+
+// var sampleDb = new Sequelize(sampleDbName, userName, password, {
+//     dialect: 'mssql',
+//     host: hostName,
+//     port: 1433, // Default port
+//     logging: false, // disable logging; default: console.log
+
+//     dialectOptions: {
+//         requestTimeout: 30000 // timeout = 30 seconds
+//     }
+// });
+
+// // Define the 'Feedback' model
+// var Feedback = sampleDb.define('feedback', {
+//     Name: Sequelize.STRING,
+//     Authors: Sequelize.STRING,
+//     Company: Sequelize.STRING,
+//     Contact: Sequelize.STRING,
+//     Product: Sequelize.STRING,
+//     Notes: Sequelize.STRING,
+//     Tags: Sequelize.STRING
+// });
+
+// sampleDb.sync()
+// .then(function() {
+//     console.log('\nCreated database schema from model.');
+// })
 var connector = new builder.ChatConnector({
     appId: process.env.MicrosoftAppId,
     appPassword: process.env.MicrosoftAppPassword
@@ -59,6 +93,8 @@ bot.dialog('/firstRun',
     {
         session.userData.name = results.response
         session.send("Nice to meet you %s.", session.userData.name); 
+        session.send("How would you like to record your customer conversation?");
+        session.message.text = null;
         session.beginDialog('/EntrySelection');
     }
    
@@ -72,10 +108,16 @@ bot.dialog('/', [
         {
             session.beginDialog('/firstRun');
         }
+        else if (session.message.address.channelId === "email")
+        {
+            // Default to batch data entry for email channel
+            session.beginDialog('/batchDataEntry');
+        }
         else
         {
             session.send("Welcome back %s! I'm guessing you have a new customer conversation for me.", session.userData.name);
             session.message.text = null;
+            session.send("How would you like to record your customer conversation?")
             session.beginDialog('/EntrySelection');
         }
     }
@@ -89,7 +131,7 @@ bot.dialog('/EntrySelection',
         if (!session.message.text)
         {
             var dataEntrySelection = new builder.ThumbnailCard(session)
-                .title('How would you like to record your customer conversation?')
+                .title("Data Entry Method")
                 .buttons([
                     builder.CardAction.imBack(session, "Interactive Entry", "Interactive Entry"),
                     builder.CardAction.imBack(session, "Batch Entry", "Batch Entry")
@@ -129,17 +171,17 @@ bot.dialog('/interactiveDataEntry',
     },
     function (session, results)
     {
-        session.userData.authors = results.response;
+        session.conversationData.authors = results.response;
         builder.Prompts.text(session, "What company did y'all speak with?");
     },
     function (session, results)
     {
-        session.userData.company = results.response;
-        builder.Prompts.text(session, "Who did you speak with at " + session.userData.company + "?");
+        session.conversationData.company = results.response;
+        builder.Prompts.text(session, "Who did you speak with at " + session.conversationData.company + "?");
     },
     function (session, results)
     {
-        session.userData.contact = results.response;
+        session.conversationData.contact = results.response;
         builder.Prompts.choice(session, "Which products did you talk about?", ["SQLVM", "Elastic Pools", "Azure SQL DB", "On-Prem SQL Server", "Other"]);
     },
     function (session, results)
@@ -149,12 +191,12 @@ bot.dialog('/interactiveDataEntry',
     },
     function (session, results)
     {
-        session.userData.notes = results.response;
+        session.conversationData.notes = results.response;
         builder.Prompts.text(session, "Any tags you would like to add to make this conversation easier to find in the future?");
     },
     function (session, results)
     {
-        session.userData.tags = results.response;
+        session.conversationData.tags = results.response;
         session.send("That's all I need.");
         
         session.beginDialog('/conversationCard');
@@ -166,7 +208,65 @@ bot.dialog('/batchDataEntry',
 [
     function(session)
     {
-        session.endDialog("Function not yet implemented");
+        var inputFeedback = session.conversationData.inputFeedback;
+        if (!inputFeedback)
+            inputFeedback = ";";
+        
+        if(!session.conversationData.templateDisplayed)
+        {
+            var feedbackTemplate = "Enter your conversation using the following template: \n\n";
+            //feedbackTemplate+= "@maav1: \n\n";
+            feedbackTemplate+= "**Authors:** {Microsoft alias}, {Microsoft alias} \n\n";
+            feedbackTemplate+= "**Company:** {company name} \n\n";
+            feedbackTemplate+= "**Contact:** {customer contact name} \n\n";
+            feedbackTemplate+= "**Product:** {SQLVM, Elastic Pools, Azure SQL DB, On-Prem SQL Server, Other} \n\n";
+            feedbackTemplate+= "**Tags:** {tag}, {tag} \n\n";
+            feedbackTemplate+= "**Notes:** {enter note text here} \n\n";
+            feedbackTemplate+= "**/END**";
+
+            session.send(feedbackTemplate);
+            session.conversationData.templateDisplayed = true;
+        }
+        
+
+        //Read input until termination character
+        var templateReceived = (inputFeedback.indexOf('/END') != -1);
+        if (inputFeedback && (!templateReceived))
+        {
+            session.conversationData.inputFeedback+= session.message.text;
+            session.message.text = null;
+            console.log('receiving conversation details');
+
+            inputFeedback = session.conversationData.inputFeedback.toString();
+            templateReceived = (inputFeedback.indexOf('/END') != -1);
+        }
+        
+        if (templateReceived)
+        {
+            console.log('conversation received');
+            session.sendTyping();
+            var templateTokens = session.conversationData.inputFeedback.split(/(\w+:\s*)/i)
+
+            for (var token = 0; token<templateTokens.length; token++)
+            {
+                if (templateTokens[token].search(/authors?:/i) != -1)
+                    session.conversationData.authors = templateTokens[token+1];
+                else if (templateTokens[token].search(/company:/i) != -1)
+                    session.conversationData.company = templateTokens[token+1];
+                else if (templateTokens[token].search(/contacts?:/i) != -1)
+                    session.conversationData.contact = templateTokens[token+1];
+                else if (templateTokens[token].search(/products?:/i) != -1)
+                    session.conversationData.product = templateTokens[token+1];
+                else if (templateTokens[token].search(/tags?:/i) != -1)
+                    session.conversationData.tags = templateTokens[token+1];
+                else if (templateTokens[token].search(/notes?:/i) != -1)
+                    session.conversationData.notes = templateTokens[token+1];
+            }
+
+            console.log(session.conversationData);
+
+            session.beginDialog('/conversationCard');
+        }
     }
 ]);
 
@@ -179,9 +279,9 @@ bot.dialog('/conversationCard', [
         {
             session.send("Please confirm the information below is accurate");
                 
-            var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + session.userData.contact + " today where you discussed about how " + session.userData.product + " is used at " + session.userData.company + "</s><voice gender = \"female\"></voice>"
-            var header = "Conversation with " + session.userData.company
-            var authors = session.userData.name + ", " + session.userData.authors
+            var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + session.conversationData.contact + " today where you discussed about how " + session.userData.product + " is used at " + session.conversationData.company + "</s><voice gender = \"female\"></voice>"
+            var header = "Conversation with " + session.conversationData.company
+            var authors = session.userData.name + ", " + session.conversationData.authors
 
             var outputCard = new builder.Message(session)
             .addAttachment({
@@ -204,7 +304,7 @@ bot.dialog('/conversationCard', [
                             [
                                 {
                                     "title": "Company:",
-                                    "value": session.userData.company
+                                    "value": session.conversationData.company
                                 },
                                 {
                                     "title": "Author(s):",
@@ -212,19 +312,19 @@ bot.dialog('/conversationCard', [
                                 },
                                 {
                                     "title": "Customer contact(s):",
-                                    "value": session.userData.contact
+                                    "value": session.conversationData.contact
                                 },
                                 {
                                     "title": "Product(s) discussed:",
-                                    "value": session.userData.product
+                                    "value": session.conversationData.product
                                 },
                                 {
                                     "title": "Tags:",
-                                    "value": session.userData.tags
+                                    "value": session.conversationData.tags
                                 },
                                 {
                                     "title": "Notes:",
-                                    "value": session.userData.notes
+                                    "value": session.conversationData.notes
                                 }
 
                             ]
@@ -275,8 +375,12 @@ bot.dialog('/conversationCard', [
             
             if (response.message === "edit")
                 session.replaceDialog('/editConversation');
-            else if (response.message === "confirm")
+            else if (response.message === "confirm"){
                 session.replaceDialog('/confirm');
+                // Feedback.create({Name: session.userData.name, Authors: session.conversationData.authors, Company: session.conversationData.company, Contact: session.conversationData.contact, Product: session.userData.product, Notes: session.conversationData.notes, Tags: session.conversationData.tags}).then(feedback => {
+                // console.log(feedback.get({ plain: true}))
+                // });
+            }
             else
             {
                 session.message.value = null;
@@ -314,12 +418,12 @@ bot.dialog('/confirm', [
         
         var feedbackObject = new Object();
         feedbackObject.name = session.userData.name;
-        feedbackObject.authors = session.userData.authors;
-        feedbackObject.company = session.userData.company;
-        feedbackObject.contact = session.userData.contact;
+        feedbackObject.authors = session.conversationData.authors;
+        feedbackObject.company = session.conversationData.company;
+        feedbackObject.contact = session.conversationData.contact;
         feedbackObject.product = session.userData.product;
-        feedbackObject.notes = session.userData.notes;
-        feedbackObject.tags = session.userData.tags;
+        feedbackObject.notes = session.conversationData.notes;
+        feedbackObject.tags = session.conversationData.tags;
 
         //Write feedback to database if available
         if (db_config.server)
@@ -362,12 +466,43 @@ bot.dialog('/help', [
     {
         var botName = 'MAAV-1';
         var description = `I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.`;
+        var helpText = "* To list available commands: **/help** \n\n";
+        helpText += "* To restart conversation session: **/restart** \n\n";
+        helpText += "* To reset bot to default state: **/reset** \n\n";
 
         session.send(`I'm ${botName}`);
         session.send(`${description}`);
+        session.send(helpText);
         session.endDialog("You can enter OK to continue ...")
     }
-]).triggerAction({ matches: /^help/i }); 
+]).triggerAction({ matches: /^\/help/i }); 
+
+//Restart dialog
+bot.dialog('/restart', [
+    function (session, args, next)
+    {
+        session.endDialog("Restarting conversation session ...");
+        session.beginDialog('/');
+    }
+]).triggerAction({ matches: /^\/restart/i }); 
+
+//Reset dialog
+bot.dialog('/reset', [
+    function (session, args, next)
+    {
+        session.userData.name = null;
+        session.conversationData.authors = null;
+        session.conversationData.company = null;
+        session.conversationData.contact = null;
+        session.userData.product = null;
+        session.conversationData.notes = null;
+        session.conversationData.tags = null;
+        session.userData.inputFeedback = null;
+        session.message.text = null;
+        session.endDialog("Resetting to default state...");
+        session.beginDialog('/');
+    }
+]).triggerAction({ matches: /^\/reset/i }); 
 
 module.exports = { 
     connector: connector,
