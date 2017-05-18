@@ -18,23 +18,55 @@
         }
     },
     "variables": {
-        "botName": "[concat('MAAV1-', uniqueString(resourceGroup().id, deployment().name))]",
-        "location": "[resourceGroup().location]"
+        "uniqueBotIdentifier": "[uniqueString(resourceGroup().id, deployment().name)]",
+        "botName": "[concat('MAAV1-', variables('uniqueBotIdentifier'))]",
+        "location": "[resourceGroup().location]",
+        "storageAccountName": "[concat('MAAV1Storage-', variables('uniqueBotIdentifier'))]"
     },
     "resources": [
         {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "apiVersion": "2015-06-15",
+            "location": "[variables('location')]",
+            "properties": {
+                "accountType": "Standard_LRS"
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2015-04-01",
+            "name": "[variables('botName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "name": "[variables('botName')]",
+                "computeMode": "Dynamic",
+                "sku": "Dynamic"
+            }
+        },
+        {
             "name": "[variables('botName')]",
             "type": "Microsoft.Web/sites",
-            "kind": "functionapp,botapp",
+            "kind": "functionapp",
             "apiVersion": "2016-03-01",
             "location": "[variables('location')]",
             "properties": {
                 "name": "[variables('botName')]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('botName'))]",
                 "siteConfig": {
                     "appSettings": [
                         {
                             "name": "WEBSITE_NODE_DEFAULT_VERSION",
                             "value": "6.5.0"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]"
+                        },
+                        {
+                            "name": "AzureWebJobsDashboard",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]"
+
                         },
                         {
                             "name": "FUNCTIONS_EXTENSION_VERSION",
@@ -57,16 +89,16 @@
                             "value": "[variables('botName')]"
                         },
                         {
-                            "name": "BotEnv",
-                            "value": "prod"
-                        },
-                        {
                             "name": "SCM_POST_DEPLOYMENT_ACTIONS_PATH",
                             "value": "PostDeploymentScripts"
                         }
                     ]
                 }
             },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('botName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ],
             "resources": [
                 {
                     "apiVersion": "2016-03-01",
