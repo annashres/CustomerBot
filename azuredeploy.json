@@ -21,7 +21,8 @@
         "uniqueBotIdentifier": "[uniqueString(resourceGroup().id, deployment().name)]",
         "botName": "[concat('MAAV1-', variables('uniqueBotIdentifier'))]",
         "location": "[resourceGroup().location]",
-        "storageAccountName": "[concat('maav1store', variables('uniqueBotIdentifier'))]"
+        "storageAccountName": "[concat('maav1store', variables('uniqueBotIdentifier'))]",
+        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
     },
     "resources": [
         {
@@ -91,6 +92,14 @@
                         {
                             "name": "SCM_POST_DEPLOYMENT_ACTIONS_PATH",
                             "value": "PostDeploymentScripts"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[toLower(variables('botName'))]"
                         }
                     ]
                 }
