@@ -21,7 +21,7 @@
         "uniqueBotIdentifier": "[uniqueString(resourceGroup().id, deployment().name)]",
         "botName": "[concat('MAAV1-', variables('uniqueBotIdentifier'))]",
         "location": "[resourceGroup().location]",
-        "storageAccountName": "[concat('maav1storage', variables('uniqueBotIdentifier'))]"
+        "storageAccountName": "[concat('maav1store', variables('uniqueBotIdentifier'))]"
     },
     "resources": [
         {
