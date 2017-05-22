@@ -5,7 +5,9 @@
     "botbuilder-azure": "^3.0.2",
     "dotenv": "^2.0.0",
     "restify": "^4.3.0",
-    "sequelize": "^3.30.4"
+    "sequelize": "^3.30.4",
+    "fuse.js": "3.0.3",
+    "tedious":"2.0.0"
   },
   "devDependencies": {
     "@types/node": "^6.0.52",
