@@ -3,6 +3,11 @@ var builder = require('botbuilder');
 var azure_builder = require('botbuilder-azure');
 var Sequelize = require('sequelize');
 
+var Fuse = require('fuse.js');
+var Connection = require('tedious').Connection;
+var Request = require('tedious').Request;
+var TYPES = require('tedious').TYPES;
+
 //Create connection to database
 if (process.env.DB_SERVER)
 {
@@ -163,6 +168,62 @@ bot.dialog('/interactiveDataEntry',
     {
         session.conversationData.authors = results.response;
         builder.Prompts.text(session, "What company did y'all speak with?");
+    },
+    function (session, results)
+    {
+        session.conversationData.company = results.response;
+        //search for similar companies
+        // Create connection to database
+        var config = {
+        userName: process.env.DB_ADMIN, // update me
+        password: process.env.DB_PASSWORD, // update me
+        server: process.env.DB_SERVER,
+            options: {
+                database: process.env.DB_NAME,
+                rowCollectionOnRequestCompletion: true
+            }
+        }
+
+        var connection = new Connection(config);
+
+        // Attempt to connect and execute queries if connection goes through
+        connection.on('connect', function(err) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Connected');
+            console.log('Reading rows from the Table...');
+            // Read all rows from table
+            var request = new Request(
+            'SELECT company FROM feedbacks;',
+            function(err, rowCount, rows) {
+                if (err) {
+                console.log(err);
+                } else {
+                var companies = rows.map(row => { return { name: row[0].value } });
+                console.log(rowCount + ' row(s) returned');
+                // console.log(rows);
+                var options = {
+                    shouldSort: true,
+                    includeMatches: true,
+                    minMatchCharLength: 1,
+                    keys: [
+                        "name"
+                    ]
+                };
+                var fuse = new Fuse(companies, options); // "list" is the item array
+                var result = fuse.search(session.conversationData.company);
+                console.log(companies);
+                console.log(result);
+                var matches=result.map(function(entry) {return entry.item.name;})
+                builder.Prompts.text(session, "I found these companies that are similar to " + session.conversationData.company + "did you mean any of these companies? " + matches + ". please type in a company name.");
+                connection.close();
+                }
+            });
+            // Execute SQL statement
+            connection.execSql(request);
+        }
+        });
     },
     function (session, results)
     {
