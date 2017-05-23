@@ -1,31 +1,25 @@
-"use strict";
-var builder = require("botbuilder");
-var botbuilder_azure = require("botbuilder-azure");
-var path = require('path');
+// This module sets up a local API server to run the maav-1 bot on a local dev machine, or binds the bot to a function app if deployed to Azure
 
+// Grab environment variables from .env file
+require('dotenv').config();
 var useEmulator = (process.env.NODE_ENV == 'development');
 
-var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure.BotServiceConnector({
-    appId: process.env['MicrosoftAppId'],
-    appPassword: process.env['MicrosoftAppPassword'],
-    stateEndpoint: process.env['BotStateEndpoint'],
-    openIdMetadata: process.env['BotOpenIdMetadata']
-});
+// Grab bot file 
+var bot = require('./bot.js');
 
-var bot = new builder.UniversalBot(connector);
-bot.localePath(path.join(__dirname, './locale'));
-
-bot.dialog('/', function (session) {
-    session.send('You said ' + session.message.text);
-});
-
-if (useEmulator) {
+// Create a local API server if the environment is local dev machine
+if (useEmulator)
+{
     var restify = require('restify');
     var server = restify.createServer();
-    server.listen(3978, function() {
-        console.log('test bot endpont at http://localhost:3978/api/messages');
+
+    server.listen(process.env.PORT, function()
+    {
+        console.log('local bot endpoint listening at %s', server.url);
     });
-    server.post('/api/messages', connector.listen());    
-} else {
-    module.exports = { default: connector.listen() }
+    server.post('/api/messages', bot.connector.listen());
+}
+else
+{
+    module.exports = {default: bot.connector.listen()};
 }
