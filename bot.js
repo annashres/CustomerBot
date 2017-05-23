@@ -7,6 +7,7 @@ var Fuse = require('fuse.js');
 var Connection = require('tedious').Connection;
 var Request = require('tedious').Request;
 var TYPES = require('tedious').TYPES;
+var path = require('path');
 
 //Create connection to database
 if (process.env.DB_SERVER)
@@ -55,6 +56,7 @@ var connector = new builder.ChatConnector({
 
 // Create chat bot instance
 var bot = new builder.UniversalBot(connector);
+bot.localePath(path.join(__dirname, './locale'));
 
 // Welcome message
 bot.on('conversationUpdate', function(message)
@@ -180,7 +182,8 @@ bot.dialog('/interactiveDataEntry',
         server: process.env.DB_SERVER,
             options: {
                 database: process.env.DB_NAME,
-                rowCollectionOnRequestCompletion: true
+                rowCollectionOnRequestCompletion: true,
+                encrypt: true
             }
         }
 
@@ -195,7 +198,7 @@ bot.dialog('/interactiveDataEntry',
             console.log('Reading rows from the Table...');
             // Read all rows from table
             var request = new Request(
-            'SELECT company FROM feedbacks;',
+            'SELECT DISTINCT company FROM feedbacks;',
             function(err, rowCount, rows) {
                 if (err) {
                 console.log(err);
