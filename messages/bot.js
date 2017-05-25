@@ -1,7 +1,6 @@
 "use strict";
 var builder = require("botbuilder");
 var botbuilder_azure = require("botbuilder-azure");
-var sleep = require('sleep');
 
 var Sequelize = require('sequelize');
 var Fuse = require('fuse.js');
@@ -194,8 +193,6 @@ bot.dialog('/firstRun',
                 builder.CardAction.dialogAction(session, "Dashboard", "", "View conversation dashboard")
             ]);
             
-            //Pause for 1 second to give user time to read previous message
-            sleep.sleep(1);
             session.send("Select one of the actions below to continue:");
             session.send(new builder.Message(session).addAttachment(optionButtons));
         }
