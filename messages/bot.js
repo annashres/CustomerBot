@@ -1,6 +1,7 @@
 "use strict";
 var builder = require("botbuilder");
 var botbuilder_azure = require("botbuilder-azure");
+var sleep = require('sleep');
 
 var Sequelize = require('sequelize');
 var Fuse = require('fuse.js');
@@ -62,7 +63,7 @@ var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure
 var bot = new builder.UniversalBot(connector);
 bot.localePath(path.join(__dirname, './locale'));
 
-// Welcome message
+// Wake bot up when a user joins the channel
 bot.on('conversationUpdate', function(message)
 {
     if (message.membersAdded)
@@ -70,250 +71,444 @@ bot.on('conversationUpdate', function(message)
         message.membersAdded.forEach(function(identity)
         {
             if (identity.id === message.address.bot.id)
-            {
-                console.log('Sending greeting message...')
                 bot.beginDialog(message.address, '/');
-            }
         });
     }
 });
 
-//Add first run dialog
-bot.dialog('/firstRun',
-[
-    function (session)
+// Main dialog loop - this is the default dialog that launches other dialogs
+bot.dialog('/', [
+    function (session, args, next)
     {
-        var botName = 'MAAV-1';
-        var description = `I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.`;
+        // Register global dialog handlers
+        bot.beginDialogAction('Help', '/help');
+        bot.beginDialogAction('Interactive Entry', '/interactiveDataEntry');
+        bot.beginDialogAction('Batch Entry', '/batchDataEntry');
+        bot.beginDialogAction('Retrieve', '/fetchConversation');
+        bot.beginDialogAction('Dashboard', '/viewDashboard');
 
-        session.send(`Hi there! I'm ${botName}`);
-        session.send(`In a nutshell, here's what I do:\n\n${description}`);
-        builder.Prompts.text(session, `What's your name?`);
-    },
-    function (session, results)
-    {
-        session.userData.name = results.response
-        session.send("Nice to meet you %s.", session.userData.name); 
-        session.send("How would you like to record your customer conversation?");
-        session.message.text = null;
-        session.beginDialog('/EntrySelection');
+        // Send bot intro if this is the user's first interaction with bot
+        if (!session.userData.name)
+        {
+            if (session.message.address.channelId != "emulator")
+            {
+                session.userData.name = session.message.user.name;
+                session.userData.firstName = session.message.user.name.split(' ')[0];
+                session.beginDialog('/firstRun');
+            }
+            else
+                session.beginDialog('/sayHello');
+        }
+        // Send available bot actions if the user has previous experience with the bot       
+        else
+        {
+            session.beginDialog('/selectAction');   
+        }
     }
-   
 ]);
 
-// Main dialog loop
-bot.dialog('/', [
+// This dialog is only run in the emulator channel where the name of the user is not known
+bot.dialog('/sayHello',
+[
     function (session, args, next)
     {
         if (!session.userData.name)
         {
-            session.beginDialog('/firstRun');
-        }
-        else if (session.message.address.channelId === "email")
-        {
-            // Default to batch data entry for email channel
-            session.beginDialog('/batchDataEntry');
+            session.send("Hello there!");
+            session.send("It appears that I don't know your name.");
+            builder.Prompts.text(session, "What do I call you?");
         }
         else
-        {
-            session.send("Welcome back %s! I'm guessing you have a new customer conversation for me.", session.userData.name);
-            session.message.text = null;
-            session.send("How would you like to record your customer conversation?")
-            session.beginDialog('/EntrySelection');
-        }
+            session.replaceDialog('/firstRun');
+    },
+    function (session, results)
+    {
+        session.userData.name = results.response;
+        session.userData.firstName = results.response.split(' ')[0];
+        session.replaceDialog('/firstRun');
     }
 ]);
 
-// Entry selection dialog
-bot.dialog('/EntrySelection', 
+//First run dialog - this dialog is run the first time a user interacts with a bot
+bot.dialog('/firstRun',
+[
+    function (session, args, next)
+    {
+        var botName = 'MAAV-2';
+        var description = `I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.`;
+        var userName = session.userData.firstName;
+ 
+        //Send bot intro and template for email channel
+        if (session.message.address.channelId === "email")
+        {
+            // Parse email chain if bot was forwarded email
+            if (isEmail(session.message.text))
+            {
+                var message = `Greetings ${userName},\n\n`;
+
+                message+= `I'm ${botName}. ${description} \n\n\n\n`;
+                message+= "I see you've sent a previous conversation in the email body. Give me a few minutes to process this information ...";
+                session.send(message);
+                session.replaceDialog('/batchParser', session.message.text);
+            }
+            else
+            {    
+                var message = `Greetings ${userName},\n\n`;
+
+                message+= `I'm ${botName}. ${description} \n\n\n\n`;
+                message+= "Below you will find the template I need to record your conversation.\n\n"
+                message+= "Reply back with the completed template to continue:\n\n---\n\n";
+                message+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
+                message+= "**Company:** {company name} \n\n";
+                message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
+                message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
+                message+= "**Tags (optional):** {tag}, {tag} ... \n\n";
+                message+= "**Summary (optional):** {enter short summary of note here}";
+                message+= "**Notes:** {enter note text here} \n\n\n\n";
+
+                message+= "Here's an example completed template:\n\n";
+                message+= "Authors: madhuka, ayolubek, anshrest, vinsonyu \n\n";
+                message+= "Company: Wonka Chocolate Factory \n\n";
+                message+= "Contact: Willy Wonka \n\n";
+                message+= "Product: SQL VM, SQL DB \n\n";
+                message+= "Tags: chocolate, column-store \n\n";
+                message+= "Summary: Mr. Wonka described the challenges he's facing migrating from SQLVM to SQLDB \n\n";
+                message+= "Notes: Mr. Wonka is the eccentric owner of the world-famous Wonka chocolate factory. He employees mystery workers called Oompa-Loompas to operate his chocolate factory. The Oompa-Loompas use SQL VM to crank out batches of chocolate for the millions of customers of Wonka chocolate. Their massive growth has led them to worry about how much time they're spending on maintaining infrastructure"
+                message+= "instead of making delicious chocolates. They are interested in Azure SQL database but are concerned about the security implications of a public endpoint. The secret chocolate recipe algorithm cannot fall into the wrong hands or it will spell disaster for the company."
+
+                builder.Prompts.text(session, message);
+            }
+        }
+        // Send bot intro and option buttons for chat messenger channels
+        else
+        {
+            session.send(`Greetings ${userName}! I'm ${botName}`);
+            session.send(`In a nutshell, here's what I do:\n\n${description}`);
+            var optionButtons = new builder.ThumbnailCard(session)
+            .title("Bot actions")
+            .buttons([
+                builder.CardAction.dialogAction(session, "Help","", "Help"),
+                builder.CardAction.dialogAction(session, "Interactive Entry", "", "Add Conversation (Interactive mode)"),
+                builder.CardAction.dialogAction(session, "Batch Entry", "", "Add Conversation (Batch mode)"),
+                builder.CardAction.dialogAction(session, "Retrieve", "", "Retrieve conversation(s)"),
+                builder.CardAction.dialogAction(session, "Dashboard", "", "View conversation dashboard")
+            ]);
+            
+            //Pause for 1 second to give user time to read previous message
+            sleep.sleep(1);
+            session.send("Select one of the actions below to continue:");
+            session.send(new builder.Message(session).addAttachment(optionButtons));
+        }
+    },
+    function (session, results)
+    {
+        //Store email response template
+        var inputTemplate = results.response;
+        session.beginDialog('/batchParser', inputTemplate);
+    }
+   
+]);
+
+// Selection dialog - this dialog presents the user with bot actions. This is typically the screen users will start with
+bot.dialog('/selectAction', 
 [
     function(session, args, next)
     {
-        if (!session.message.text)
-        {
-            var dataEntrySelection = new builder.ThumbnailCard(session)
-                .title("Data Entry Method")
-                .buttons([
-                    builder.CardAction.imBack(session, "Interactive Entry", "Interactive Entry"),
-                    builder.CardAction.imBack(session, "Batch Entry", "Batch Entry")
-                ]);
-            session.send(new builder.Message(session).addAttachment(dataEntrySelection));
-        }
-        else
-        {
-            var selection = session.message.text;
+        var userName = session.userData.firstName;
+        var message;
 
-            if (selection === 'Interactive Entry')
+        if (session.message.address.channelId === "email")
+        {
+            // Parse email chain if bot was forwarded email
+            if (isEmail(session.message.text))
             {
-                session.message.text = null;
-                session.replaceDialog('/interactiveDataEntry')
-            }
-            else if (selection === 'Batch Entry')
-            {
-                session.message.text = null;
-                session.replaceDialog('/batchDataEntry');
+                var message = `Greetings ${userName},\n\n`;
+
+                message+= "I see you've sent a previous conversation in the email body. Give me a few minutes to process this information ...";
+                session.send(message);
+                session.replaceDialog('/batchParser', session.message.text);
             }
             else
             {
-                session.send("Did not understand selection '%s'", selection);
-                session.message.text = null;
+                var dashboardURL = process.env.DashboardUrl;
+                message = `Greetings ${userName}, \n\n`;
+
+                message+= `I'm guessing you have a new customer conversation for me. If you're looking to see the conversations already stored in the archive instead, you can [take a look at the customer conversation dashboard](${dashboardURL}). \n\n`
+                message+= "Below you will find the template I need to record your conversation.\n\n"
+                message+= "Reply back with the completed template to continue:\n\n---\n\n";
+                message+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
+                message+= "**Company:** {company name} \n\n";
+                message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
+                message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
+                message+= "**Tags (optional):** {tag}, {tag} ... \n\n";
+                message+= "**Summary (optional):** {enter short summary of note here}";
+                message+= "**Notes:** {enter note text here} \n\n\n\n";
+
+                builder.Prompts.text(session, message);
             }
         }
+        else
+        {
+            message = `Greetings ${userName}!\n\n Select one of the actions below to continue:`;
+            var optionButtons = new builder.ThumbnailCard(session)
+            .title("Bot actions")
+            .buttons([
+                builder.CardAction.dialogAction(session, "Help","", "Help"),
+                builder.CardAction.dialogAction(session, "Interactive Entry", "", "Add Conversation (Interactive mode)"),
+                builder.CardAction.dialogAction(session, "Batch Entry", "", "Add Conversation (Batch mode)"),
+                builder.CardAction.dialogAction(session, "Retrieve", "", "Retrieve conversation(s)"),
+                builder.CardAction.dialogAction(session, "Dashboard", "", "View conversation dashboard")
+            ]);
+            
+            session.send(message);
+            session.send(new builder.Message(session).addAttachment(optionButtons));
+        }
+    },
+    function (session, results)
+    {
+        //Store email response template
+        var inputTemplate = results.response;
+        session.beginDialog('/batchParser', inputTemplate);
     }
 
 ]);
 
-// Interactive entry dialog
+// Enter conversation details interactively with dialog
 bot.dialog('/interactiveDataEntry',
 [
-    function (session)
+    function (session, args, next)
     {
-        builder.Prompts.text(session, "Besides yourself, who else was on the call");
-    },
-    function (session, results)
-    {
-        session.conversationData.authors = results.response;
-        builder.Prompts.text(session, "What company did y'all speak with?");
+        // This forwards the button click for product selection to the appropriate handler
+        if (session.message.value)
+            next();
+        else
+            builder.Prompts.text(session, "Please enter the Microsoft aliases (separated by commas) of all who were on the call.");
     },
     function (session, results, next)
     {
-        session.conversationData.company = results.response;
-        
-        if (process.env.DB_SERVER)
+        if (session.message.value)
+            next();
+        else
         {
-            //search for similar companies
-            // Create connection to database
-            var config = {
-            userName: process.env.DB_ADMIN, // update me
-            password: process.env.DB_PASSWORD, // update me
-            server: process.env.DB_SERVER,
-                options: {
-                    database: process.env.DB_NAME,
-                    rowCollectionOnRequestCompletion: true,
-                    encrypt: true
+            session.conversationData.authors = results.response;
+            builder.Prompts.text(session, "What company did you speak with?");
+        }
+    },
+    function (session, results, next)
+    {
+        if (session.message.value)
+            next();
+        else
+        {
+            session.conversationData.company = results.response;
+            
+            if (process.env.DB_SERVER)
+            {
+                //search for similar companies
+                // Create connection to database
+                var config = {
+                userName: process.env.DB_ADMIN, // update me
+                password: process.env.DB_PASSWORD, // update me
+                server: process.env.DB_SERVER,
+                    options: {
+                        database: process.env.DB_NAME,
+                        rowCollectionOnRequestCompletion: true,
+                        encrypt: true
+                    }
                 }
-            }
 
-            var connection = new Connection(config);
+                var connection = new Connection(config);
 
-            // Attempt to connect and execute queries if connection goes through
-            connection.on('connect', function(err) {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log('Connected');
-                console.log('Reading rows from the Table...');
-                // Read all rows from table
-                var request = new Request(
-                'SELECT DISTINCT company FROM feedbacks;',
-                function(err, rowCount, rows) {
-                    if (err) {
+                // Attempt to connect and execute queries if connection goes through
+                connection.on('connect', function(err) {
+                if (err) {
                     console.log(err);
-                    } else {
-                    var companies = rows.map(row => { return { name: row[0].value } });
-                    console.log(rowCount + ' row(s) returned');
-                    // console.log(rows);
-                    var options = {
-                        shouldSort: true,
-                        includeMatches: true,
-                        minMatchCharLength: 1,
-                        keys: [
-                            "name"
+                } else {
+                    console.log('Connected');
+                    console.log('Reading rows from the Table...');
+                    // Read all rows from table
+                    var request = new Request(
+                    'SELECT DISTINCT company FROM feedbacks;',
+                    function(err, rowCount, rows) {
+                        if (err) {
+                        console.log(err);
+                        } else {
+                        var companies = rows.map(row => { return { name: row[0].value } });
+                        console.log(rowCount + ' row(s) returned');
+                        // console.log(rows);
+                        var options = {
+                            shouldSort: true,
+                            includeMatches: true,
+                            minMatchCharLength: 1,
+                            keys: [
+                                "name"
+                            ]
+                        };
+                        var fuse = new Fuse(companies, options); // "list" is the item array
+                        var result = fuse.search(session.conversationData.company);
+                        console.log(companies);
+                        console.log(result);
+                        var matches=result.map(function(entry) {return entry.item.name;})
+                        builder.Prompts.text(session, "I found these companies that are similar to " + session.conversationData.company + "did you mean any of these companies? " + matches + ". please type in a company name.");
+                        connection.close();
+                        }
+                    });
+                    // Execute SQL statement
+                    connection.execSql(request);
+                }
+                });
+            }
+            else
+                next();
+        }
+    },
+    function (session, results, next)
+    {
+        if (session.message.value)
+            next();
+        else
+        {
+            if (process.env.DB_SERVER)
+                session.conversationData.company = results.response;
+            builder.Prompts.text(session, "Who did you speak with at " + session.conversationData.company + "?");
+        }
+    },
+    function (session, results, next)
+    {
+        if (session.message.value)
+            next();
+        else
+        {
+            session.conversationData.contact = results.response;
+            var productSelection = new builder.Message(session)
+                .addAttachment({
+                    contentType: "application/vnd.microsoft.card.adaptive",
+                    content:
+                    {
+                        type: "AdaptiveCard",
+                        body:
+                        [
+                            {
+                                "type": "TextBlock",
+                                "text": "Which product(s) does your customer use?"
+                            },
+                            {
+                                "type": "Input.ChoiceSet",
+                                "id": "productSelection",
+                                "isMultiSelect": true,
+                                "style": "compact",
+                                "choices": 
+                                [
+                                    {
+                                      "title": "SQL VM",
+                                      "value": "SQL VM"
+                                    },
+                                    {
+                                        "title": "SQL DB",
+                                        "value": "SQL DB"
+                                    },
+                                    {
+                                        "title": "SQL DW",
+                                        "value": "SQL DW"
+                                    },
+                                    {
+                                        "title": "Elastic pool",
+                                        "value": "Elastic pool"
+                                    },
+                                    {
+                                        "title": "On-prem SQL Server",
+                                        "value": "On-prem SQL Server"
+                                    },
+                                    {
+                                        "title": "Other",
+                                        "value": "Other"
+                                    }
+                                ]
+                            }           
+                        ],
+                        actions:
+                        [
+                            {
+                                "type": "Action.Submit",
+                                "title": "Submit",
+                                "data": { "message" : "productSelection"}  
+                            }
                         ]
-                    };
-                    var fuse = new Fuse(companies, options); // "list" is the item array
-                    var result = fuse.search(session.conversationData.company);
-                    console.log(companies);
-                    console.log(result);
-                    var matches=result.map(function(entry) {return entry.item.name;})
-                    builder.Prompts.text(session, "I found these companies that are similar to " + session.conversationData.company + "did you mean any of these companies? " + matches + ". please type in a company name.");
-                    connection.close();
                     }
                 });
-                // Execute SQL statement
-                connection.execSql(request);
+
+                session.send(productSelection);
+                next();
             }
-            });
+    },
+    function (session, results)
+    {
+        if (session.message.value)
+        {
+            session.conversationData.product = session.message.value.productSelection;
+            builder.Prompts.text(session, "Please paste in below any notes you took down during the call");
         }
-        else
-            next();
-    },
-    function (session, results)
-    {
-        if (process.env.DB_SERVER)
-            session.conversationData.company = results.response;
-        builder.Prompts.text(session, "Who did you speak with at " + session.conversationData.company + "?");
-    },
-    function (session, results)
-    {
-        session.conversationData.contact = results.response;
-        builder.Prompts.choice(session, "Which products did you talk about?", ["SQLVM", "Elastic Pools", "Azure SQL DB", "On-Prem SQL Server", "Other"]);
-    },
-    function (session, results)
-    {
-        session.conversationData.product = results.response.entity;
-        builder.Prompts.text(session, "Please paste in below any notes you took down during the call");
     },
     function (session, results)
     {
         session.conversationData.notes = results.response;
-        builder.Prompts.text(session, "Any tags you would like to add to make this conversation easier to find in the future?");
+        session.send("Any tags you would like to add to make this conversation easier to find in the future?")
+        builder.Prompts.text(session, "Popular options include tagging features your customer uses, tagging private preview status, tagging blockers and happy moments that were revealed during the conversation");
     },
     function (session, results)
     {
         session.conversationData.tags = results.response;
-        session.send("That's all I need.");
+        session.send("That's all I need. Thanks for the info.");
         
-        session.beginDialog('/conversationCard');
+        session.beginDialog('/displayConversationCard', session.conversationData);
     } 
 ]);
 
-// Batch entry dialog
+// Enter conversation details at once using provided template
 bot.dialog('/batchDataEntry',
 [
-    function(session)
+    function(session, args, next)
     {
-        var inputFeedback = session.conversationData.inputFeedback;
-        if (!inputFeedback)
-            inputFeedback = ";";
-        
-        if(!session.conversationData.templateDisplayed)
-        {
-            var feedbackTemplate = "Enter your conversation using the following template: \n\n";
-           
-            if (session.message.address.channelId === "email")
-                feedbackTemplate+= "@maav1: \n\n";
-            
-            feedbackTemplate+= "**Authors:** {Microsoft alias}, {Microsoft alias} \n\n";
-            feedbackTemplate+= "**Company:** {company name} \n\n";
-            feedbackTemplate+= "**Contact:** {customer contact name} \n\n";
-            feedbackTemplate+= "**Product:** {SQLVM, Elastic Pools, Azure SQL DB, On-Prem SQL Server, Other} \n\n";
-            feedbackTemplate+= "**Tags:** {tag}, {tag} \n\n";
-            feedbackTemplate+= "**Notes:** {enter note text here} \n\n";
-            feedbackTemplate+= "**/END**";
+        var userName = session.userData.firstName;
+        var message = "Below you will find the template I need to record your conversation.\n\n"
+        message+= "Reply back with the completed template to continue:\n\n---\n\n";
+        message+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
+        message+= "**Company:** {company name} \n\n";
+        message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
+        message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
+        message+= "**Tags (optional):** {tag}, {tag} ... \n\n";
+        message+= "**Summary (optional):** {enter short summary of note here}\n\n";
+        message+= "**Notes:** {enter note text here} \n\n";
 
-            session.send(feedbackTemplate);
-            session.conversationData.templateDisplayed = true;
+        builder.Prompts.text(session, message);
+    },
+    function(session, results)
+    {
+        session.replaceDialog('/batchParser', results.response);
+    }
+]);
+
+// Parse conversation details that were input via batch template or email
+bot.dialog('/batchParser',
+[
+    function(session, args, next)
+    {
+        // Parse input email chain
+        if (isEmail(session.message.text))
+        {
+            // Email parser function goes here
+            session.conversationData.notes = session.message.text;
         }
-        
-
-        //Read input until termination character
-        var templateReceived = (inputFeedback.indexOf('/END') != -1);
-        if (inputFeedback && (!templateReceived))
+        // Parse input conversation template
+        else
         {
-            session.conversationData.inputFeedback+= session.message.text;
-            session.message.text = null;
-            console.log('receiving conversation details');
-
-            inputFeedback = session.conversationData.inputFeedback.toString();
-            templateReceived = (inputFeedback.indexOf('/END') != -1);
-        }
-        
-        if (templateReceived)
-        {
-            console.log('conversation received');
             session.sendTyping();
-            var templateTokens = session.conversationData.inputFeedback.split(/(\w+:\s*)/i)
+            var emailSignatureRegex = /(^--*[\s]*[a-z \.]*\w+$|^best[\s,!\w]*\w+$|^regards[\s,!\w]*\w+$|^thanks[\s,!\w]*\w+$|^cheers[\s,!\w]*\w+$|^sent from [\w' ]+$)/i
+            var conversationTemplateRegex = /(\w+:\s*)/i
+
+            // Parse email signatures out of input text
+            var templateTokens = args.split(emailSignatureRegex)[0];
+            templateTokens = templateTokens.split(conversationTemplateRegex);
 
             for (var token = 0; token<templateTokens.length; token++)
             {
@@ -330,129 +525,191 @@ bot.dialog('/batchDataEntry',
                 else if (templateTokens[token].search(/notes?:/i) != -1)
                     session.conversationData.notes = templateTokens[token+1];
             }
-
-            console.log(session.conversationData);
-
-            session.beginDialog('/conversationCard');
         }
+        session.beginDialog('/displayConversationCard', session.conversationData);
     }
 ]);
 
-// Confirm data entry dialog
-bot.dialog('/conversationCard', [
+// Retrieve last 10 conversations for an input company
+bot.dialog('/fetchConversation',
+[
+    function(session)
+    {
+        session.send('Function not yet implemented').endDialog();
+    }
+]);
+
+// Launch PowerBI dashboard Url
+bot.dialog('/viewDashboard',
+[
+   function(session)
+   {
+        var dashboardURL = process.env.DashboardUrl;
+        if (dashboardURL)
+            session.send(`The conversation dashboard is available at: ${dashboardURL}`).endDialog();
+        else
+            session.send(`Oh no! Looks like I wasn't configured with the location of the conversation dashboard.`).endDialog();
+    }
+]);
+
+// Display conversation details
+bot.dialog('/displayConversationCard',
+[
     function(session, args, next)
     {
-        // Show the details that were entered if available
-        if (!session.message.value)
-        {
-            session.send("Please confirm the information below is accurate");
-                
-            var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + session.conversationData.contact + " today where you discussed about how " + session.userData.product + " is used at " + session.conversationData.company + "</s><voice gender = \"female\"></voice>"
-            var header = "Conversation with " + session.conversationData.company
-            var authors = session.userData.name + ", " + session.conversationData.authors
+        var conversationObject;
+        
+        if (args)
+            conversationObject = args;
+        else
+            conversationObject = new Object();
 
-            var outputCard = new builder.Message(session)
-            .addAttachment({
-                contentType: "application/vnd.microsoft.card.adaptive",
-                content:
-                {
-                    type: "AdaptiveCard",
-                    speak: audioSummary,
-                    body:
-                    [
+        if (!conversationObject.contact)
+            conversationObject["contact"]=" ";
+        if (!conversationObject.product)
+            conversationObject["product"]=" ";
+        if (!conversationObject.company)
+            conversationObject["company"]=" ";
+        if (!conversationObject.authors)
+            conversationObject["authors"]=" ";
+        if (!conversationObject.tags)
+            conversationObject["tags"]=" ";
+        if (!conversationObject.notes)
+            conversationObject["notes"]=" ";
+
+        var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
+        var header = "Conversation with " + conversationObject.company
+        var prompt;
+
+        if (session.message.address.channelId === "email")
+        {
+            prompt = "Please confirm the information below is accurate.\n\n";
+            prompt += "* Reply back with **Confirm** to confirm the conversation card below.";
+            prompt += "* Reply back with **Edit** and the property you'd like to modify to edit the conversation.\n\n"
+            prompt += "For example: Edit\n\n authors: Willy Wonka \n\n tags: ChocolateFactory \n\n will change the author of the conversation to 'Willy Wonka' and change the tags to 'ChocolateFactory' ";
+        }
+        else
+            prompt = "Please confirm the information below is accurate:";
+
+        var outputCard = new builder.Message(session)
+        .addAttachment({
+            contentType: "application/vnd.microsoft.card.adaptive",
+            content:
+            {
+                type: "AdaptiveCard",
+                speak: audioSummary,
+                body:
+                [
+                    {
+                        "type": "TextBlock",
+                        "text": prompt
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": header,
+                        "size": "large",
+                        "weight": "bolder",
+                        "separation": "strong",
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Company:**\n\n ${conversationObject.company}`,
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Author(s):**\n\n ${conversationObject.authors}`,
+                        "separation": "strong",
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Customer contact(s):**\n\n ${conversationObject.contact}`,
+                        "separation": "strong",
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Product(s) discussed:**\n\n ${conversationObject.product}`,
+                        "separation": "strong",
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Tags:**\n\n ${conversationObject.tags}`,
+                        "separation": "strong",
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Notes:**\n\n ${conversationObject.notes}`,
+                        "separation": "strong",
+                        "wrap": "true"
+                    }
+                ],
+                actions:
+                [
+                    {
+                        "type": "Action.ShowCard",
+                        "title": "Edit conversation",
+                        "card":
                         {
-                            "type": "TextBlock",
-                            "text": header,
-                            "size": "large",
-                            "weight": "bolder"
-                        },
-                        {
-                            "type": "FactSet",
-                            "facts":
+                            "type": "AdaptiveCard",
+                            "body":
                             [
                                 {
-                                    "title": "Company:",
-                                    "value": session.conversationData.company
-                                },
-                                {
-                                    "title": "Author(s):",
-                                    "value": authors
-                                },
-                                {
-                                    "title": "Customer contact(s):",
-                                    "value": session.conversationData.contact
-                                },
-                                {
-                                    "title": "Product(s) discussed:",
-                                    "value": session.conversationData.product
-                                },
-                                {
-                                    "title": "Tags:",
-                                    "value": session.conversationData.tags
-                                },
-                                {
-                                    "title": "Notes:",
-                                    "value": session.conversationData.notes
+                                    "type": "Input.Text",
+                                    "id": "comment",
+                                    "isMultiline": true,
+                                    "placeholder": "Enter your change here. E.g. Product: MySql DB"
                                 }
-
+                            ],
+                            "actions": 
+                            [
+                                {
+                                    "type": "Action.Submit",
+                                    "title": "OK",
+                                    "data": {"message": "edit"}
+                                }
                             ]
-                        }                 
-                    ],
-                    actions:
-                    [
-                        {
-                            "type": "Action.ShowCard",
-                            "title": "Edit conversation",
-                            "card":
-                            {
-                                "type": "AdaptiveCard",
-                                "body":
-                                [
-                                    {
-                                        "type": "Input.Text",
-                                        "id": "comment",
-                                        "isMultiline": true,
-                                        "placeholder": "Enter your change here. E.g. Product: MySql DB"
-                                    }
-                                ],
-                                "actions": 
-                                [
-                                    {
-                                        "type": "Action.Submit",
-                                        "title": "OK",
-                                        "data": {"message": "edit"}
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "type": "Action.Submit",
-                            "title": "Confirm",
-                            "data": { "message" : "confirm"}  
                         }
-                    ]
-                }
-            });
+                    },
+                    {
+                        "type": "Action.Submit",
+                        "title": "Confirm",
+                        "data": { "message" : "confirm"}  
+                    }
+                ]
+            }
+        });
 
+        if (!session.message.value)
             session.send(outputCard);
-        }
         
+        next();
+    },
+    function (session, results)
+    {
         if ((session.message) && (session.message.value))
         {
             var response = session.message.value;
             
             if (response.message === "edit")
-                session.replaceDialog('/editConversation');
+                session.replaceDialog('/editConversation', session.message.value.comment);
             else if (response.message === "confirm"){
                 session.replaceDialog('/confirm');                
             }
             else
             {
                 session.message.value = null;
-                session.send("Did not understand that response");
+                session.send("Did not understand that response. Please reply back with 'Edit' to edit the conversation card or 'Confirm' to confirm the card details.");
             }    
         }
-
+        else if (/^edit[\s]+/i.test(session.message.text))
+            session.replaceDialog('/editConversation', session.message.text);
+        else if (/^confirm[\s]+/i.test(session.message.text))
+            session.replaceDialog('/confirm');
     }
 ]);
 
@@ -460,19 +717,32 @@ bot.dialog('/conversationCard', [
 bot.dialog('/editConversation', [
     function (session, args, next)
     {
-        var inputMessage = session.message.value.comment
+        if (!args)
+        {
+            session.send("I did not receive any parameters to change. Resending conversation card...");
+            session.replaceDialog('/displayConversationCard', session.conversationData);
+        }
+        else
+        {
+            var templateTokens = args[0].split(/(\w+:\s*)/i)
 
-        inputMessage = inputMessage.split(':');
-        var inputTag = inputMessage[0];
-        var inputValue = inputMessage[1];
-
-        
-        session.send("Updating '%s' entry", inputTag);
-        session.userData[inputTag] = inputValue;
-        session.message.value = null;
-        console.log(session.userData);
-
-        session.beginDialog('/conversationCard');
+            for (var token = 0; token<templateTokens.length; token++)
+            {
+                if (templateTokens[token].search(/authors?:/i) != -1)
+                    session.conversationData.authors = templateTokens[token+1];
+                else if (templateTokens[token].search(/company:/i) != -1)
+                    session.conversationData.company = templateTokens[token+1];
+                else if (templateTokens[token].search(/contacts?:/i) != -1)
+                    session.conversationData.contact = templateTokens[token+1];
+                else if (templateTokens[token].search(/products?:/i) != -1)
+                    session.conversationData.product = templateTokens[token+1];
+                else if (templateTokens[token].search(/tags?:/i) != -1)
+                    session.conversationData.tags = templateTokens[token+1];
+                else if (templateTokens[token].search(/notes?:/i) != -1)
+                    session.conversationData.notes = templateTokens[token+1];
+            }
+        }
+        session.beginDialog('/displayConversationCard', session.conversationData);
     }
 ]);
 
@@ -498,8 +768,8 @@ bot.dialog('/confirm', [
             //db_connection.close();
         }
 
-        session.send("Your conversation has been recorded. Bye for now")
-        session.endDialog();
+        session.send("Your conversation has been recorded.")
+        session.endConversation();
     }
 ]);
 
@@ -507,45 +777,61 @@ bot.dialog('/confirm', [
 bot.dialog('/help', [
     function (session, args, next)
     {
-        var botName = 'MAAV-1';
+        var botName = 'MAAV-2';
         var description = `I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.`;
-        var helpText = "* To list available commands: **/help** \n\n";
-        helpText += "* To restart conversation session: **/restart** \n\n";
-        helpText += "* To reset bot to default state: **/reset** \n\n";
+        var helpText = "* **/help**: To list available commands \n\n";
+        helpText += "* **/home**: To restart conversation session and return to default screen \n\n";
+        helpText += "* **/reset**: To reset bot to default state \n\n";
 
         session.send(`I'm ${botName}`);
         session.send(`${description}`);
         session.send(helpText);
         session.endDialog("You can enter OK to continue ...")
     }
-]).triggerAction({ matches: /^\/help/i }); 
+]).triggerAction({
+    matches: /^\/help/i, 
+    onSelectAction: (session, args) => {session.beginDialog(args.action, args);}
+});
 
 //Restart dialog
-bot.dialog('/restart', [
+bot.dialog('/home', [
     function (session, args, next)
     {
-        session.endDialog("Restarting conversation session ...");
-        session.beginDialog('/');
+        session.replaceDialog('/selectAction');
     }
-]).triggerAction({ matches: /^\/restart/i }); 
+]).triggerAction({ matches: /^\/home/i }); 
 
 //Reset dialog
 bot.dialog('/reset', [
     function (session, args, next)
     {
         session.userData.name = null;
+        session.userData.firstName = null;
         session.conversationData.authors = null;
         session.conversationData.company = null;
         session.conversationData.contact = null;
-        session.userData.product = null;
+        session.conversationData.product = null;
         session.conversationData.notes = null;
         session.conversationData.tags = null;
-        session.userData.inputFeedback = null;
         session.message.text = null;
         session.endDialog("Resetting to default state...");
         session.beginDialog('/');
     }
-]).triggerAction({ matches: /^\/reset/i }); 
+]).triggerAction({ matches: /^\/reset/i });
+
+// Check if text is email
+function isEmail(inputText)
+{
+    var hasSender = (inputText.search(/from:/i) != -1);
+    var hasSendDate = (inputText.search(/sent:/i) != -1);
+    var hasRecipient = (inputText.search(/to:[\s+\w]+<\w+@\w+.com>/i) != -1);
+    var hasSubject = (inputText.search(/subject:/i) != -1);
+
+    if (hasSender && hasSendDate && hasRecipient && hasSubject)
+        return true;
+    else
+        return false;
+} 
 
 module.exports = { 
     connector: connector,
