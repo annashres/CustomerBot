@@ -92,10 +92,12 @@ bot.dialog('/', [
             var botChannel = session.message.address.channelId;
             if ((botChannel != "emulator") && (botChannel != "webchat"))
             {
+                var addressVariable = JSON.stringify(session.message);
                 session.send(`My channel id is:${session.message.address.channelId}`);
-                session.send(`Your name:${session.message.address.user.name}`);
+                session.send(`Address variable:${addressVariable}`);
                 session.userData.name = session.message.address.user.name;
                 session.userData.firstName = session.userData.name.split(' ')[0];
+                session.send("Calling first run dialog");
                 session.beginDialog('/firstRun');
             }
             else
