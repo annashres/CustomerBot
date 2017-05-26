@@ -89,7 +89,8 @@ bot.dialog('/', [
         // Send bot intro if this is the user's first interaction with bot
         if (!session.userData.name)
         {
-            if (session.message.address.channelId != "emulator")
+            var botChannel = session.message.address.channelId;
+            if ((botChannel != "emulator") && (botChannel != "webchat"))
             {
                 session.send(`My channel id is:${session.message.address.channelId}`);
                 session.userData.name = session.message.address.user.name;
