@@ -91,8 +91,9 @@ bot.dialog('/', [
         {
             if (session.message.address.channelId != "emulator")
             {
-                session.userData.name = session.message.user.name;
-                session.userData.firstName = session.message.user.name.split(' ')[0];
+                session.send(`My channel id is:${session.message.address.channelId}`);
+                session.userData.name = session.message.address.user.name;
+                session.userData.firstName = session.userData.name.split(' ')[0];
                 session.beginDialog('/firstRun');
             }
             else
