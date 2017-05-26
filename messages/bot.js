@@ -93,6 +93,7 @@ bot.dialog('/', [
             if ((botChannel != "emulator") && (botChannel != "webchat"))
             {
                 session.send(`My channel id is:${session.message.address.channelId}`);
+                session.send(`Your name:${session.message.address.user.name}`);
                 session.userData.name = session.message.address.user.name;
                 session.userData.firstName = session.userData.name.split(' ')[0];
                 session.beginDialog('/firstRun');
@@ -142,6 +143,7 @@ bot.dialog('/firstRun',
         //Send bot intro and template for email channel
         if (session.message.address.channelId === "email")
         {
+            session.send("In 'firstRun' dialog");
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
@@ -154,6 +156,7 @@ bot.dialog('/firstRun',
             }
             else
             {    
+                session.send("Sending template over...");
                 var message = `Greetings ${userName},\n\n`;
 
                 message+= `I'm ${botName}. ${description} \n\n\n\n`;
@@ -218,6 +221,7 @@ bot.dialog('/selectAction',
 
         if (session.message.address.channelId === "email")
         {
+            session.send("In 'selectAction' dialog");
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
@@ -229,6 +233,7 @@ bot.dialog('/selectAction',
             }
             else
             {
+                session.send("Sending template over in 'selectAction' dialog");
                 var dashboardURL = process.env.DashboardUrl;
                 message = `Greetings ${userName}, \n\n`;
 
