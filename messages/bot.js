@@ -87,43 +87,51 @@ bot.dialog('/', [
         bot.beginDialogAction('Dashboard', '/viewDashboard');
 
         // Send bot intro if this is the user's first interaction with bot
-        if (!session.userData.name)
+        if ((!session.userData.name) && (session.message.timestamp))
         {
             var botChannel = session.message.address.channelId;
-            if ((botChannel != "emulator") && (botChannel != "webchat"))
+            var userDetails = session.message.address.user;
+
+            if ((botChannel === "emulator") || (botChannel === "webchat"))
+                session.beginDialog('/sayHello');
+            else if (botChannel === "email")
             {
-                var addressVariable = JSON.stringify(session.message);
-                session.send(`My channel id is:${session.message.address.channelId}`);
-                session.send(`Address variable:${addressVariable}`);
-                session.userData.name = session.message.address.user.name;
-                session.userData.firstName = session.userData.name.split(' ')[0];
-                session.send("Calling first run dialog");
+                session.userData.name = userDetails.id
+                session.userData.firstName = userDetails.id.split('@')[0];
+                session.beginDialog('/firstRun');
+            }
+            else if (userDetails.name)
+            {
+                session.userData.name = userDetails.name
+                session.userData.firstName = userDetails.name.split(' ')[0];
                 session.beginDialog('/firstRun');
             }
             else
                 session.beginDialog('/sayHello');
         }
         // Send available bot actions if the user has previous experience with the bot       
-        else
+        else if (session.userData.name)
         {
             session.beginDialog('/selectAction');   
         }
     }
 ]);
 
-// This dialog is only run in the emulator channel where the name of the user is not known
 bot.dialog('/sayHello',
 [
     function (session, args, next)
     {
         if (!session.userData.name)
         {
-            session.send("Hello there!");
-            session.send("It appears that I don't know your name.");
+            session.send("Hello there! It appears that I don't know your name.");
             builder.Prompts.text(session, "What do I call you?");
         }
         else
-            session.replaceDialog('/firstRun');
+        {
+            var prompt = `Hello there! My sensors tell me your name is ${session.userData.name}`;
+            prompt+= `What would you like me to call you?`;
+            builder.Prompts.text(session, prompt);
+        }
     },
     function (session, results)
     {
@@ -139,7 +147,7 @@ bot.dialog('/firstRun',
     function (session, args, next)
     {
         var botName = 'MAAV-2';
-        var description = `I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.`;
+        var description = 'I record notes and insights from the conversations Microsoft employees have with customers.  My purpose is to make it easier to disseminate knowledge about Microsoft customers and win as a team.';
         var userName = session.userData.firstName;
  
         //Send bot intro and template for email channel
