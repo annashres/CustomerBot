@@ -534,15 +534,15 @@ bot.dialog('/batchParser',
         {
             session.sendTyping();
             var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-            var conversationTemplateRegex = /(\w+[\(\)\w ]*:\s*)/i;
+            var conversationTemplateRegex = /(\w+[()\w]*:\s*)/i;
 
             // Parse email signatures out of input text
             var templateTokens = args.replace(emailSignatureRegex, '');
             // Parse lines out of input text
             templateTokens = templateTokens.replace(/__/g,'');
-                        
+                   
             templateTokens = templateTokens.split(conversationTemplateRegex);
-
+            
             for (var token = 0; token<templateTokens.length; token++)
             {
                 if (templateTokens[token].search(/author[(s)]*?:/i) != -1)
@@ -551,7 +551,7 @@ bot.dialog('/batchParser',
                     session.conversationData["company"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/contact[(s)]*?:/i) != -1)
                     session.conversationData["contact"] = templateTokens[token+1];
-                else if (templateTokens[token].search(/product[(s)]*?:|product[(s)]*? discussed:/i) != -1)
+                else if (templateTokens[token].search(/product[(s)]*?:/i) != -1)
                     session.conversationData["product"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/tags?:/i) != -1)
                     session.conversationData["tags"] = templateTokens[token+1];
@@ -615,6 +615,8 @@ bot.dialog('/displayConversationCard',
             conversationObject["tags"]=" ";
         if (!conversationObject.notes)
             conversationObject["notes"]=" ";
+        if (!conversationObject.summary)
+            conversationObject["summary"]=" ";
 
         var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
         var header = "Conversation with " + conversationObject.company
@@ -638,42 +640,53 @@ bot.dialog('/displayConversationCard',
                     },
                     {
                         "type": "TextBlock",
-                        "text": `**Company:**\n\n ${conversationObject.company}`,
+                        "text": `**Company:\***\n\n ${conversationObject.company}`,
                         "wrap": "true"
                     },
                     {
                         "type": "TextBlock",
-                        "text": `**Author(s):**\n\n ${conversationObject.authors}`,
+                        "text": `**Author(s):\***\n\n ${conversationObject.authors}`,
                         "separation": "strong",
                         "wrap": "true"
                     },
                     {
                         "type": "TextBlock",
-                        "text": `**Customer contact(s):**\n\n ${conversationObject.contact}`,
+                        "text": `**Customer contact(s):\***\n\n ${conversationObject.contact}`,
                         "separation": "strong",
                         "wrap": "true"
                     },
                     {
                         "type": "TextBlock",
-                        "text": `**Product(s) discussed:**\n\n ${conversationObject.product}`,
+                        "text": `**Product(s):\***\n\n ${conversationObject.product}`,
                         "separation": "strong",
                         "wrap": "true"
                     },
                     {
                         "type": "TextBlock",
-                        "text": `**Tags:**\n\n ${conversationObject.tags}`,
+                        "text": `Tags:\n\n ${conversationObject.tags}`,
                         "separation": "strong",
                         "wrap": "true"
                     },
                     {
                         "type": "TextBlock",
-                        "text": `**Notes:**\n\n ${conversationObject.notes}`,
+                        "text": `Summary:\n\n ${conversationObject.summary}`,
+                        "separation": "strong",
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Notes:\***\n\n ${conversationObject.notes}`,
                         "separation": "strong",
                         "wrap": "true"
                     }
                 ],
                 actions:
                 [
+                    {
+                        "type": "Action.Submit",
+                        "title": "Discard conversation",
+                        "data": {"message": "discard"}
+                    },
                     {
                         "type": "Action.ShowCard",
                         "title": "Edit conversation",
@@ -710,7 +723,7 @@ bot.dialog('/displayConversationCard',
 
         if (!session.message.value)
         {
-            session.send("Please confirm the information below is accurate:");
+            session.send("Please confirm and/or edit the conversation details below:");
             session.send(outputCard);
         }
         
@@ -721,6 +734,7 @@ bot.dialog('/displayConversationCard',
         if ((session.message) && (session.message.value))
         {
             var response = session.message.value;
+            var templateCompleted = templateComplete(session.conversationData);
             
             if (response.message === "edit")
             {
@@ -728,10 +742,22 @@ bot.dialog('/displayConversationCard',
                 session.message.value = null;
                 session.replaceDialog('/editConversation', inputText);
             }
-            else if (response.message === "confirm")
+            else if ((response.message === "confirm") && (templateCompleted))
             {
                 session.message.value = null;
                 session.replaceDialog('/confirm');                
+            }
+            else if ((response.message === "confirm") && (!templateCompleted))
+            {
+                session.message.value = null;
+                session.send("Please complete all required sections in the template. Required sections are marked with an asterisk(*).");
+                session.replaceDialog('/displayConversationCard', session.conversationData);
+            }
+            else if (response.message === "discard")
+            {
+                session.message.value = null;
+                session.send("Discarding conversation details... Goodbye");
+                session.endConversation();
             }
             else
             {
@@ -780,9 +806,9 @@ bot.dialog('/displayMarkdownConversationCard',
         }
         else
         {
-            outputMessage = "**Please complete all required sections in the template below. Required sections are marked with an asterisk(*)**\n";
+            outputMessage = "**Please complete all required sections in the template below.**\n";
             outputMessage += "* Reply with **Discard** to discard the conversation.\n";
-            outputMessage += "* **Edit the required details below** and reply back to continue.\n\n\n\n";
+            outputMessage += "* **Edit the required details below** and reply back to continue. Required sections are marked with an asterisk(*).\n\n\n\n";
         }
 
         // Conversation details
@@ -791,7 +817,7 @@ bot.dialog('/displayMarkdownConversationCard',
         outputMessage += `>COMPANY*:\n\n>${conversationObject.company}\n---\n`;
         outputMessage += `>AUTHOR(S)*:\n\n>${conversationObject.authors}\n---\n`;
         outputMessage += `>CUSTOMER CONTACT(S)*:\n\n>${conversationObject.contact}\n---\n`;
-        outputMessage += `>PRODUCT(S) DISCUSSED*:\n\n>${conversationObject.product}\n---\n`;
+        outputMessage += `>PRODUCT(S)*:\n\n>${conversationObject.product}\n---\n`;
         outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n---\n`;
         outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n---\n`;
         outputMessage += `>NOTES*:\n\n>${conversationObject.notes}`;
@@ -931,7 +957,7 @@ function isValidTemplate(inputText)
         return true;
     else if (inputText.search(/contact[(s)]*?:/i) != -1)
         return true;
-    else if (inputText.search(/product[(s)]*?:|product[(s)]*? discussed:/i) != -1)
+    else if (inputText.search(/product[(s)]*?:/i) != -1)
         return true;
     else if (inputText.search(/tags?:/i) != -1)
         return true;
