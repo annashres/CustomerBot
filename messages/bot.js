@@ -86,10 +86,13 @@ bot.dialog('/', [
         bot.beginDialogAction('Retrieve', '/fetchConversation');
         bot.beginDialogAction('Dashboard', '/viewDashboard');
 
+        var botChannel = session.message.address.channelId;
+
         // Send bot intro if this is the user's first interaction with bot
-        if ((!session.userData.name) && (session.message.timestamp))
+        if ((!session.userData.name) && (botChannel === "emulator"))
+            session.beginDialog('/sayHello');
+        else if ((!session.userData.name) && (session.message.timestamp))
         {
-            var botChannel = session.message.address.channelId;
             var userDetails = session.message.address.user;
 
             if ((botChannel === "emulator") || (botChannel === "webchat"))
@@ -153,7 +156,6 @@ bot.dialog('/firstRun',
         //Send bot intro and template for email channel
         if (session.message.address.channelId === "email")
         {
-            session.send("In 'firstRun' dialog");
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
@@ -166,7 +168,6 @@ bot.dialog('/firstRun',
             }
             else
             {    
-                session.send("Sending template over...");
                 var message = `Greetings ${userName},\n\n`;
 
                 message+= `I'm ${botName}. ${description} \n\n\n\n`;
@@ -231,7 +232,6 @@ bot.dialog('/selectAction',
 
         if (session.message.address.channelId === "email")
         {
-            session.send("In 'selectAction' dialog");
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
@@ -243,7 +243,6 @@ bot.dialog('/selectAction',
             }
             else
             {
-                session.send("Sending template over in 'selectAction' dialog");
                 var dashboardURL = process.env.DashboardUrl;
                 message = `Greetings ${userName}, \n\n`;
 
@@ -540,7 +539,11 @@ bot.dialog('/batchParser',
                     session.conversationData.notes = templateTokens[token+1];
             }
         }
-        session.beginDialog('/displayConversationCard', session.conversationData);
+
+        if (session.message.address.channelId === "email")
+            session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
+        else
+            session.beginDialog('/displayConversationCard', session.conversationData);
     }
 ]);
 
@@ -566,7 +569,7 @@ bot.dialog('/viewDashboard',
     }
 ]);
 
-// Display conversation details
+// Display conversation details using adaptive card
 bot.dialog('/displayConversationCard',
 [
     function(session, args, next)
@@ -593,18 +596,7 @@ bot.dialog('/displayConversationCard',
 
         var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
         var header = "Conversation with " + conversationObject.company
-        var prompt;
-
-        if (session.message.address.channelId === "email")
-        {
-            prompt = "Please confirm the information below is accurate.\n\n";
-            prompt += "* Reply back with **Confirm** to confirm the conversation card below.";
-            prompt += "* Reply back with **Edit** and the property you'd like to modify to edit the conversation.\n\n"
-            prompt += "For example: Edit\n\n authors: Willy Wonka \n\n tags: ChocolateFactory \n\n will change the author of the conversation to 'Willy Wonka' and change the tags to 'ChocolateFactory' ";
-        }
-        else
-            prompt = "Please confirm the information below is accurate:";
-
+        
         var outputCard = new builder.Message(session)
         .addAttachment({
             contentType: "application/vnd.microsoft.card.adaptive",
@@ -614,10 +606,6 @@ bot.dialog('/displayConversationCard',
                 speak: audioSummary,
                 body:
                 [
-                    {
-                        "type": "TextBlock",
-                        "text": prompt
-                    },
                     {
                         "type": "TextBlock",
                         "text": header,
@@ -699,7 +687,10 @@ bot.dialog('/displayConversationCard',
         });
 
         if (!session.message.value)
+        {
+            session.send("Please confirm the information below is accurate:");
             session.send(outputCard);
+        }
         
         next();
     },
@@ -710,8 +701,14 @@ bot.dialog('/displayConversationCard',
             var response = session.message.value;
             
             if (response.message === "edit")
-                session.replaceDialog('/editConversation', session.message.value.comment);
-            else if (response.message === "confirm"){
+            {
+                var inputText = session.message.value.comment;
+                session.message.value = null;
+                session.replaceDialog('/editConversation', inputText);
+            }
+            else if (response.message === "confirm")
+            {
+                session.message.value = null;
                 session.replaceDialog('/confirm');                
             }
             else
@@ -720,10 +717,61 @@ bot.dialog('/displayConversationCard',
                 session.send("Did not understand that response. Please reply back with 'Edit' to edit the conversation card or 'Confirm' to confirm the card details.");
             }    
         }
-        else if (/^edit[\s]+/i.test(session.message.text))
-            session.replaceDialog('/editConversation', session.message.text);
-        else if (/^confirm[\s]+/i.test(session.message.text))
+    }
+]);
+
+// Display conversation details using markdown text
+bot.dialog('/displayMarkdownConversationCard',
+[
+    function (session, args, next)
+    {
+        var conversationObject;
+        var outputMessage;
+        
+        if (args)
+            conversationObject = args;
+        else
+            conversationObject = new Object();
+
+        if (!conversationObject.contact)
+            conversationObject["contact"]=" ";
+        if (!conversationObject.product)
+            conversationObject["product"]=" ";
+        if (!conversationObject.company)
+            conversationObject["company"]=" ";
+        if (!conversationObject.authors)
+            conversationObject["authors"]=" ";
+        if (!conversationObject.tags)
+            conversationObject["tags"]=" ";
+        if (!conversationObject.notes)
+            conversationObject["notes"]=" ";
+        if (!conversationObject.summary)
+            conversationObject["summary"]=" ";
+
+        // Confirmation and edit instructions
+        session.conversationData.displayMarkdown = true;
+        outputMessage = "**Please confirm the information below is accurate**\n";
+        outputMessage += "* Reply with **Confirm** to accept the conversation details below.\n";
+        outputMessage += "* **Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
+
+        // Conversation details
+        outputMessage += `**Conversation with ${conversationObject.company}**\n\n`;
+        outputMessage += `COMPANY:\n\n${conversationObject.company}\n---\n`;
+        outputMessage += `AUTHOR(S):\n\n${conversationObject.authors}\n---\n`;
+        outputMessage += `CUSTOMER CONTACT(S):\n\n${conversationObject.contact}\n---\n`;
+        outputMessage += `PRODUCT(S) DISCUSSED:\n\n${conversationObject.product}\n---\n`;
+        outputMessage += `TAGS:\n\n${conversationObject.tags}\n---\n`;
+        outputMessage += `SUMMARY:\n\n${conversationObject.summary}\n---\n`;
+        outputMessage += `NOTES:\n\n${conversationObject.notes}\n---\n`;
+       
+        builder.Prompts.text(session, outputMessage);
+    },
+    function (session, results)
+    {
+        if (/^confirm[\s]+/i.test(session.message.text))
             session.replaceDialog('/confirm');
+        else
+            session.replaceDialog('/editConversation', session.message.text);
     }
 ]);
 
@@ -731,32 +779,59 @@ bot.dialog('/displayConversationCard',
 bot.dialog('/editConversation', [
     function (session, args, next)
     {
-        if (!args)
+        if ((!args) && (!session.conversationData.displayMarkdown))
         {
             session.send("I did not receive any parameters to change. Resending conversation card...");
             session.replaceDialog('/displayConversationCard', session.conversationData);
         }
+        else if ((!args) && (session.conversationData.displayMarkdown))
+        {
+            session.send("I did not receive any parameters to change. Resending conversation card...");
+            session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
+        }
         else
         {
-            var templateTokens = args[0].split(/(\w+:\s*)/i)
+            var templateTokens = args.split(/(\w+:\s*)/i)
 
             for (var token = 0; token<templateTokens.length; token++)
             {
-                if (templateTokens[token].search(/authors?:/i) != -1)
+                if (templateTokens[token].search(/author[(s)]*?:/i) != -1)
+                {
+                    session.send("Updating 'authors' entry...");
                     session.conversationData.authors = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/company:/i) != -1)
+                {
+                    session.send("Updating 'company' entry...");
                     session.conversationData.company = templateTokens[token+1];
-                else if (templateTokens[token].search(/contacts?:/i) != -1)
+                }
+                else if (templateTokens[token].search(/contact[(s)]*?:/i) != -1)
+                {
+                    session.send("Updating 'customer contact' entry...");
                     session.conversationData.contact = templateTokens[token+1];
-                else if (templateTokens[token].search(/products?:/i) != -1)
+                }
+                else if (templateTokens[token].search(/product[(s)]*?:/i) != -1)
+                {
+                    session.send("Updating 'product' entry...");
                     session.conversationData.product = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/tags?:/i) != -1)
+                {
+                    session.send("Updating 'tags' entry...");
                     session.conversationData.tags = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/notes?:/i) != -1)
+                {
+                    session.send("Updating 'notes' entry...");
                     session.conversationData.notes = templateTokens[token+1];
+                }
             }
         }
-        session.beginDialog('/displayConversationCard', session.conversationData);
+
+        if (session.conversationData.displayMarkdown)
+            session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
+        else
+            session.beginDialog('/displayConversationCard', session.conversationData);
     }
 ]);
 
