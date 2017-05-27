@@ -529,6 +529,9 @@ bot.dialog('/batchParser',
 
             // Parse email signatures out of input text
             var templateTokens = args.replace(emailSignatureRegex, '');
+            // Parse lines out of input text
+            templateTokens = templateTokens.replace(/---/g, '');
+            
             templateTokens = templateTokens.split(conversationTemplateRegex);
 
             for (var token = 0; token<templateTokens.length; token++)
