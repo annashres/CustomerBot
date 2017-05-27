@@ -771,27 +771,36 @@ bot.dialog('/displayMarkdownConversationCard',
             conversationObject["summary"]=" ";
 
         // Confirmation and edit instructions
-        outputMessage = "**Please confirm the information below is accurate**\n";
-        outputMessage += "* Reply with **Confirm** to accept the conversation details below.\n";
-        outputMessage += "* Reply with **Discard** to discard the conversation.\n";
-        outputMessage += "* **Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
+        if (templateComplete(conversationObject))
+        {
+            outputMessage = "**Please confirm the information below is accurate**\n";
+            outputMessage += "* Reply with **Confirm** to accept the conversation details below.\n";
+            outputMessage += "* Reply with **Discard** to discard the conversation.\n";
+            outputMessage += "* **Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
+        }
+        else
+        {
+            outputMessage = "**Please complete all required sections in the template below. Required sections are marked with an asterisk(*)**\n";
+            outputMessage += "* Reply with **Discard** to discard the conversation.\n";
+            outputMessage += "* **Edit the required details below** and reply back to continue.\n\n\n\n";
+        }
 
         // Conversation details
         var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
         outputMessage += `**Conversation with ${companyName}**\n\n`;
-        outputMessage += `>COMPANY:\n\n>${conversationObject.company}\n---\n`;
-        outputMessage += `>AUTHOR(S):\n\n>${conversationObject.authors}\n---\n`;
-        outputMessage += `>CUSTOMER CONTACT(S):\n\n>${conversationObject.contact}\n---\n`;
-        outputMessage += `>PRODUCT(S) DISCUSSED:\n\n>${conversationObject.product}\n---\n`;
+        outputMessage += `>COMPANY*:\n\n>${conversationObject.company}\n---\n`;
+        outputMessage += `>AUTHOR(S)*:\n\n>${conversationObject.authors}\n---\n`;
+        outputMessage += `>CUSTOMER CONTACT(S)*:\n\n>${conversationObject.contact}\n---\n`;
+        outputMessage += `>PRODUCT(S) DISCUSSED*:\n\n>${conversationObject.product}\n---\n`;
         outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n---\n`;
         outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n---\n`;
-        outputMessage += `>NOTES:\n\n>${conversationObject.notes}`;
+        outputMessage += `>NOTES*:\n\n>${conversationObject.notes}`;
        
         builder.Prompts.text(session, outputMessage);
     },
     function (session, results)
     {
-        if (/^[\s]*confirm[\s]+/im.test(session.message.text))
+        if ((/^[\s]*confirm[\s]+/im.test(session.message.text)) && (templateComplete(session.conversationData)))
             session.replaceDialog('/confirm');
         else if (/^[\s]*discard[\s]+/im.test(session.message.text))
         {
@@ -892,6 +901,7 @@ bot.dialog('/reset', [
         session.conversationData.product = null;
         session.conversationData.notes = null;
         session.conversationData.tags = null;
+        session.conversationData.summary = null;
         session.message.text = null;
         session.endDialog("Resetting to default state...");
         session.beginDialog('/');
@@ -930,6 +940,21 @@ function isValidTemplate(inputText)
     else if (inputText.search(/summary:/i) != -1)
         return true;
     else
+        return false;
+}
+
+// Check if all required fields in template have been completed
+function templateComplete(inputTemplate)
+{
+    if(!inputTemplate.authors)
+        return false;
+    if(!inputTemplate.company)
+        return false;
+    if(!inputTemplate.contact)
+        return false;
+    if(!inputTemplate.product)
+        return false;
+    if(!inputTemplate.notes)
         return false;
 }
 
