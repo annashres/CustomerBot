@@ -248,6 +248,15 @@ bot.dialog('/selectAction',
                 session.send(message);
                 session.replaceDialog('/batchParser', session.message.text);
             }
+            // Parse conversation template if bot was sent a template as part of greeting
+            else if (isValidTemplate(session.message.text))
+            {
+                var message = `Greetings ${userName},\n\n`;
+
+                message+= "I see you've included a few details from your customer conversation in the email body. Give me a few minutes to process this information ...";
+                session.send(message);
+                session.replaceDialog('/batchParser', session.message.text);
+            }
             else
             {
                 var dashboardURL = process.env.DashboardUrl;
@@ -900,7 +909,28 @@ function isEmail(inputText)
         return true;
     else
         return false;
-} 
+}
+
+//Check if text is valid conversation template
+function isValidTemplate(inputText)
+{
+    if (inputText.search(/author[(s)]*?:/i) != -1)
+        return true;
+    else if (inputText.search(/company:/i) != -1)
+        return true;
+    else if (inputText.search(/contact[(s)]*?:/i) != -1)
+        return true;
+    else if (inputText.search(/product[(s)]*?:|product[(s)]*? discussed:/i) != -1)
+        return true;
+    else if (inputText.search(/tags?:/i) != -1)
+        return true;
+    else if (inputText.search(/notes?:/i) != -1)
+        return true;
+    else if (inputText.search(/summary:/i) != -1)
+        return true;
+    else
+        return false;
+}
 
 module.exports = { 
     connector: connector,
