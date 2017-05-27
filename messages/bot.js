@@ -534,19 +534,19 @@ bot.dialog('/batchParser',
             for (var token = 0; token<templateTokens.length; token++)
             {
                 if (templateTokens[token].search(/author[(s)]*?:/i) != -1)
-                    session.conversationData.authors = templateTokens[token+1];
+                    session.conversationData["authors"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/company:/i) != -1)
-                    session.conversationData.company = templateTokens[token+1];
+                    session.conversationData["company"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/contact[(s)]*?:/i) != -1)
-                    session.conversationData.contact = templateTokens[token+1];
+                    session.conversationData["contact"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/product[(s)]*?:|product[(s)]*? discussed:/i) != -1)
-                    session.conversationData.product = templateTokens[token+1];
+                    session.conversationData["product"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/tags?:/i) != -1)
-                    session.conversationData.tags = templateTokens[token+1];
+                    session.conversationData["tags"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/notes?:/i) != -1)
-                    session.conversationData.notes = templateTokens[token+1];
+                    session.conversationData["notes"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/summary:/i) != -1)
-                    session.conversationData.summary = templateTokens[token+1];
+                    session.conversationData["summary"] = templateTokens[token+1];
             }
         }
 
