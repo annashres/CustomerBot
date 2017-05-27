@@ -157,6 +157,9 @@ bot.dialog('/firstRun',
         //Send bot intro and template for email channel
         if (session.message.address.channelId === "email")
         {
+            // Send markdown version of conversation card for email channel
+            session.conversationData.displayMarkdown = true;
+            
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
@@ -233,6 +236,9 @@ bot.dialog('/selectAction',
 
         if (session.message.address.channelId === "email")
         {
+            // Send markdown version of conversation card for email channel
+            session.conversationData.displayMarkdown = true;
+
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
@@ -543,7 +549,7 @@ bot.dialog('/batchParser',
             }
         }
 
-        if (session.message.address.channelId === "email")
+        if (session.conversationData.displayMarkdown)
             session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
         else
             session.beginDialog('/displayConversationCard', session.conversationData);
@@ -752,9 +758,9 @@ bot.dialog('/displayMarkdownConversationCard',
             conversationObject["summary"]=" ";
 
         // Confirmation and edit instructions
-        session.conversationData.displayMarkdown = true;
         outputMessage = "**Please confirm the information below is accurate**\n";
         outputMessage += "* Reply with **Confirm** to accept the conversation details below.\n";
+        outputMessage += "* Reply with **Discard** to discard the conversation.\n";
         outputMessage += "* **Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
 
         // Conversation details
@@ -765,14 +771,19 @@ bot.dialog('/displayMarkdownConversationCard',
         outputMessage += `>PRODUCT(S) DISCUSSED:\n\n>${conversationObject.product}\n---\n`;
         outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n---\n`;
         outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n---\n`;
-        outputMessage += `>NOTES:\n\n>${conversationObject.notes}\n---\n`;
+        outputMessage += `>NOTES:\n\n>${conversationObject.notes}`;
        
         builder.Prompts.text(session, outputMessage);
     },
     function (session, results)
     {
-        if (/^confirm[\s]+/i.test(session.message.text))
+        if (/^[\s]*confirm[\s]+/im.test(session.message.text))
             session.replaceDialog('/confirm');
+        else if (/^[\s]*discard[\s]+/im.test(session.message.text))
+        {
+            session.send("Discarding conversation.");
+            session.endConversation();
+        }
         else
             session.replaceDialog('/editConversation', session.message.text);
     }
@@ -782,6 +793,8 @@ bot.dialog('/displayMarkdownConversationCard',
 bot.dialog('/editConversation', [
     function (session, args, next)
     {
+        session.send("Updating conversation details...");
+
         if ((!args) && (!session.conversationData.displayMarkdown))
         {
             session.send("I did not receive any parameters to change. Resending conversation card...");
@@ -793,33 +806,7 @@ bot.dialog('/editConversation', [
             session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
         }
         else
-        {
-            var templateTokens = args.split(/(\w+:\s*)/i)
-
-            session.send("Updating conversation details...");
-            for (var token = 0; token<templateTokens.length; token++)
-            {
-                if (templateTokens[token].search(/author[(s)]*?:/i) != -1)
-                    session.conversationData.authors = templateTokens[token+1];
-                else if (templateTokens[token].search(/company:/i) != -1)
-                    session.conversationData.company = templateTokens[token+1];
-                else if (templateTokens[token].search(/contact[(s)]*?:/i) != -1)
-                    session.conversationData.contact = templateTokens[token+1];
-                else if (templateTokens[token].search(/product[(s)]*?:/i) != -1)
-                    session.conversationData.product = templateTokens[token+1];
-                else if (templateTokens[token].search(/tags?:/i) != -1)
-                    session.conversationData.tags = templateTokens[token+1];
-                else if (templateTokens[token].search(/notes?:/i) != -1)
-                    session.conversationData.notes = templateTokens[token+1];
-                else if (templateTokens[token].search(/summary:/i) != -1)
-                    session.conversationData.summary = templateTokens[token+1];                
-            }
-        }
-
-        if (session.conversationData.displayMarkdown)
-            session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
-        else
-            session.beginDialog('/displayConversationCard', session.conversationData);
+            session.replaceDialog('/batchParser', args);
     }
 ]);
 
