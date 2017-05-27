@@ -41,6 +41,7 @@ if (process.env.DB_SERVER)
         Contact: Sequelize.STRING,
         Product: Sequelize.STRING,
         Notes: Sequelize.STRING,
+        Summary: Sequelize.STRING,
         Tags: Sequelize.STRING
     });
 
@@ -254,7 +255,7 @@ bot.dialog('/selectAction',
                 message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
                 message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
                 message+= "**Tags (optional):** {tag}, {tag} ... \n\n";
-                message+= "**Summary (optional):** {enter short summary of note here}";
+                message+= "**Summary (optional):** {enter short summary of note here}\n\n";
                 message+= "**Notes:** {enter note text here} \n\n\n\n";
 
                 builder.Prompts.text(session, message);
@@ -516,7 +517,7 @@ bot.dialog('/batchParser',
         else
         {
             session.sendTyping();
-            var emailSignatureRegex = /(^--*[\s]*[a-z \.]*\w+$|^best[\s,!\w]*\w+$|^regards[\s,!\w]*\w+$|^thanks[\s,!\w]*\w+$|^cheers[\s,!\w]*\w+$|^sent from [\w' ]+$)/i
+            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
             var conversationTemplateRegex = /(\w+:\s*)/i
 
             // Parse email signatures out of input text
@@ -537,6 +538,8 @@ bot.dialog('/batchParser',
                     session.conversationData.tags = templateTokens[token+1];
                 else if (templateTokens[token].search(/notes?:/i) != -1)
                     session.conversationData.notes = templateTokens[token+1];
+                else if (templateTokens[token].search(/summary:/i) != -1)
+                    session.conversationData.summary = templateTokens[token+1];
             }
         }
 
@@ -756,13 +759,13 @@ bot.dialog('/displayMarkdownConversationCard',
 
         // Conversation details
         outputMessage += `**Conversation with ${conversationObject.company}**\n\n`;
-        outputMessage += `COMPANY:\n\n${conversationObject.company}\n---\n`;
-        outputMessage += `AUTHOR(S):\n\n${conversationObject.authors}\n---\n`;
-        outputMessage += `CUSTOMER CONTACT(S):\n\n${conversationObject.contact}\n---\n`;
-        outputMessage += `PRODUCT(S) DISCUSSED:\n\n${conversationObject.product}\n---\n`;
-        outputMessage += `TAGS:\n\n${conversationObject.tags}\n---\n`;
-        outputMessage += `SUMMARY:\n\n${conversationObject.summary}\n---\n`;
-        outputMessage += `NOTES:\n\n${conversationObject.notes}\n---\n`;
+        outputMessage += `>COMPANY:\n\n>${conversationObject.company}\n---\n`;
+        outputMessage += `>AUTHOR(S):\n\n>${conversationObject.authors}\n---\n`;
+        outputMessage += `>CUSTOMER CONTACT(S):\n\n>${conversationObject.contact}\n---\n`;
+        outputMessage += `>PRODUCT(S) DISCUSSED:\n\n>${conversationObject.product}\n---\n`;
+        outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n---\n`;
+        outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n---\n`;
+        outputMessage += `>NOTES:\n\n>${conversationObject.notes}\n---\n`;
        
         builder.Prompts.text(session, outputMessage);
     },
@@ -793,38 +796,23 @@ bot.dialog('/editConversation', [
         {
             var templateTokens = args.split(/(\w+:\s*)/i)
 
+            session.send("Updating conversation details...");
             for (var token = 0; token<templateTokens.length; token++)
             {
                 if (templateTokens[token].search(/author[(s)]*?:/i) != -1)
-                {
-                    session.send("Updating 'authors' entry...");
                     session.conversationData.authors = templateTokens[token+1];
-                }
                 else if (templateTokens[token].search(/company:/i) != -1)
-                {
-                    session.send("Updating 'company' entry...");
                     session.conversationData.company = templateTokens[token+1];
-                }
                 else if (templateTokens[token].search(/contact[(s)]*?:/i) != -1)
-                {
-                    session.send("Updating 'customer contact' entry...");
                     session.conversationData.contact = templateTokens[token+1];
-                }
                 else if (templateTokens[token].search(/product[(s)]*?:/i) != -1)
-                {
-                    session.send("Updating 'product' entry...");
                     session.conversationData.product = templateTokens[token+1];
-                }
                 else if (templateTokens[token].search(/tags?:/i) != -1)
-                {
-                    session.send("Updating 'tags' entry...");
                     session.conversationData.tags = templateTokens[token+1];
-                }
                 else if (templateTokens[token].search(/notes?:/i) != -1)
-                {
-                    session.send("Updating 'notes' entry...");
                     session.conversationData.notes = templateTokens[token+1];
-                }
+                else if (templateTokens[token].search(/summary:/i) != -1)
+                    session.conversationData.summary = templateTokens[token+1];                
             }
         }
 
@@ -852,6 +840,7 @@ bot.dialog('/confirm', [
                 Contact: session.conversationData.contact,
                 Product: session.conversationData.product,
                 Notes: session.conversationData.notes,
+                Summary: session.conversationData.summary,
                 Tags: session.conversationData.tags
             }).then(feedback => {console.log(feedback.get({plain: true}))});
             //db_connection.close();
