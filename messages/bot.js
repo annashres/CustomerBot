@@ -539,8 +539,9 @@ bot.dialog('/batchParser',
             // Parse email signatures out of input text
             var templateTokens = args.replace(emailSignatureRegex, '');
             // Parse lines out of input text
-            templateTokens = templateTokens.replace(/---/g, '');
-            session.send(`Debug mode on:${templateTokens}`);
+            templateTokens = templateTokens.replace(/<hr>/g, '');
+            var debugText = JSON.stringify(templateTokens);
+            session.send(`Debug mode on:${debugText}`);
             
             templateTokens = templateTokens.split(conversationTemplateRegex);
 
