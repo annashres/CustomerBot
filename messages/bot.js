@@ -777,7 +777,8 @@ bot.dialog('/displayMarkdownConversationCard',
         outputMessage += "* **Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
 
         // Conversation details
-        outputMessage += `**Conversation with ${conversationObject.company}**\n\n`;
+        var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
+        outputMessage += `**Conversation with ${companyName}**\n\n`;
         outputMessage += `>COMPANY:\n\n>${conversationObject.company}\n---\n`;
         outputMessage += `>AUTHOR(S):\n\n>${conversationObject.authors}\n---\n`;
         outputMessage += `>CUSTOMER CONTACT(S):\n\n>${conversationObject.contact}\n---\n`;
