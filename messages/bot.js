@@ -525,10 +525,10 @@ bot.dialog('/batchParser',
         {
             session.sendTyping();
             var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-            var conversationTemplateRegex = /(\w+:\s*)/i
+            var conversationTemplateRegex = /(\w+[\(\)\w ]*:\s*)/i;
 
             // Parse email signatures out of input text
-            var templateTokens = args.split(emailSignatureRegex)[0];
+            var templateTokens = args.replace(emailSignatureRegex, '');
             templateTokens = templateTokens.split(conversationTemplateRegex);
 
             for (var token = 0; token<templateTokens.length; token++)
