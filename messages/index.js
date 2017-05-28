@@ -21,5 +21,11 @@ if (useEmulator)
 }
 else
 {
-    module.exports = {default: bot.connector.listen()};
+    var listener = bot.connector.listen();
+    var withLogging = function(context, req) {
+        console.log = context.log;
+        listener(context, req);
+    }
+
+    module.exports = { default: withLogging }
 }

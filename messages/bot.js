@@ -76,17 +76,17 @@ bot.on('conversationUpdate', function(message)
     }
 });
 
+// Register global dialog handlers
+bot.beginDialogAction('Help', '/help');
+bot.beginDialogAction('Interactive Entry', '/interactiveDataEntry');
+bot.beginDialogAction('Batch Entry', '/batchDataEntry');
+bot.beginDialogAction('Retrieve', '/fetchConversation');
+bot.beginDialogAction('Dashboard', '/viewDashboard');
+
 // Main dialog loop - this is the default dialog that launches other dialogs
 bot.dialog('/', [
     function (session, args, next)
     {
-        // Register global dialog handlers
-        bot.beginDialogAction('Help', '/help');
-        bot.beginDialogAction('Interactive Entry', '/interactiveDataEntry');
-        bot.beginDialogAction('Batch Entry', '/batchDataEntry');
-        bot.beginDialogAction('Retrieve', '/fetchConversation');
-        bot.beginDialogAction('Dashboard', '/viewDashboard');
-
         var botChannel = session.message.address.channelId;
 
         // Send bot intro if this is the user's first interaction with bot
@@ -102,13 +102,14 @@ bot.dialog('/', [
             {
                 session.userData.name = userDetails.id
                 session.userData.firstName = userDetails.id.split('@')[0];
+                session.userData.alias = session.userData.firstName;
                 session.beginDialog('/firstRun');
             }
             else if (userDetails.name)
             {
                 session.userData.name = userDetails.name
                 session.userData.firstName = userDetails.name.split(' ')[0];
-                session.beginDialog('/firstRun');
+                session.beginDialog('/sayHello');
             }
             else
                 session.beginDialog('/sayHello');
@@ -130,17 +131,30 @@ bot.dialog('/sayHello',
             session.send("Hello there! It appears that I don't know your name.");
             builder.Prompts.text(session, "What do I call you?");
         }
-        else
+        else if (!session.userData.alias)
         {
             var prompt = `Hello there! My sensors tell me your name is ${session.userData.name}`;
-            prompt+= `What would you like me to call you?`;
+            prompt+= `What is your Microsoft alias?`;
             builder.Prompts.text(session, prompt);
         }
     },
     function (session, results)
     {
-        session.userData.name = results.response;
-        session.userData.firstName = results.response.split(' ')[0];
+        if (!session.userData.name)
+        {
+            session.userData.name = results.response;
+            session.userData.firstName = results.response.split(' ')[0];
+            builder.Prompts.text(session, `What is your Microsoft alias?`);
+        }
+        else
+        {
+            session.userData.alias = results.response;
+            session.replaceDialog('/firstRun');
+        }
+    },
+    function (session, results)
+    {
+        session.userData.alias = results.response;
         session.replaceDialog('/firstRun');
     }
 ]);
@@ -604,19 +618,19 @@ bot.dialog('/displayConversationCard',
             conversationObject = new Object();
 
         if (!conversationObject.contact)
-            conversationObject["contact"]=" ";
+            conversationObject["contact"]="";
         if (!conversationObject.product)
-            conversationObject["product"]=" ";
+            conversationObject["product"]="";
         if (!conversationObject.company)
-            conversationObject["company"]=" ";
+            conversationObject["company"]="";
         if (!conversationObject.authors)
-            conversationObject["authors"]=" ";
+            conversationObject["authors"]="";
         if (!conversationObject.tags)
-            conversationObject["tags"]=" ";
+            conversationObject["tags"]="";
         if (!conversationObject.notes)
-            conversationObject["notes"]=" ";
+            conversationObject["notes"]="";
         if (!conversationObject.summary)
-            conversationObject["summary"]=" ";
+            conversationObject["summary"]="";
 
         var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
         var header = "Conversation with " + conversationObject.company
@@ -688,29 +702,9 @@ bot.dialog('/displayConversationCard',
                         "data": {"message": "discard"}
                     },
                     {
-                        "type": "Action.ShowCard",
+                        "type": "Action.Submit",
                         "title": "Edit conversation",
-                        "card":
-                        {
-                            "type": "AdaptiveCard",
-                            "body":
-                            [
-                                {
-                                    "type": "Input.Text",
-                                    "id": "comment",
-                                    "isMultiline": true,
-                                    "placeholder": "Enter your change here. E.g. Product: MySql DB"
-                                }
-                            ],
-                            "actions": 
-                            [
-                                {
-                                    "type": "Action.Submit",
-                                    "title": "OK",
-                                    "data": {"message": "edit"}
-                                }
-                            ]
-                        }
+                        "data": {"message": "edit"}
                     },
                     {
                         "type": "Action.Submit",
@@ -723,7 +717,7 @@ bot.dialog('/displayConversationCard',
 
         if (!session.message.value)
         {
-            session.send("Please confirm and/or edit the conversation details below:");
+            session.send("Please confirm or edit the conversation details below:");
             session.send(outputCard);
         }
         
@@ -738,9 +732,8 @@ bot.dialog('/displayConversationCard',
             
             if (response.message === "edit")
             {
-                var inputText = session.message.value.comment;
                 session.message.value = null;
-                session.replaceDialog('/editConversation', inputText);
+                session.replaceDialog('/displayEditableCard', session.conversationData);
             }
             else if ((response.message === "confirm") && (templateCompleted))
             {
@@ -782,19 +775,19 @@ bot.dialog('/displayMarkdownConversationCard',
             conversationObject = new Object();
 
         if (!conversationObject.contact)
-            conversationObject["contact"]=" ";
+            conversationObject["contact"]="";
         if (!conversationObject.product)
-            conversationObject["product"]=" ";
+            conversationObject["product"]="";
         if (!conversationObject.company)
-            conversationObject["company"]=" ";
+            conversationObject["company"]="";
         if (!conversationObject.authors)
-            conversationObject["authors"]=" ";
+            conversationObject["authors"]="";
         if (!conversationObject.tags)
-            conversationObject["tags"]=" ";
+            conversationObject["tags"]="";
         if (!conversationObject.notes)
-            conversationObject["notes"]=" ";
+            conversationObject["notes"]="";
         if (!conversationObject.summary)
-            conversationObject["summary"]=" ";
+            conversationObject["summary"]="";
 
         // Confirmation and edit instructions
         if (templateComplete(conversationObject))
@@ -835,6 +828,248 @@ bot.dialog('/displayMarkdownConversationCard',
         }
         else
             session.replaceDialog('/editConversation', session.message.text);
+    }
+]);
+
+// Display editable conversation card
+bot.dialog('/displayEditableCard',
+[
+    function (session, args, next)
+    {
+        var conversationObject;
+       
+        if (args)
+            conversationObject = args;
+        else
+            conversationObject = new Object();
+
+        if (!conversationObject.contact)
+            conversationObject["contact"]="";
+        if (!conversationObject.product)
+            conversationObject["product"]="";
+        if (!conversationObject.company)
+            conversationObject["company"]="";
+        if (!conversationObject.authors)
+            conversationObject["authors"]="";
+        if (!conversationObject.tags)
+            conversationObject["tags"]="";
+        if (!conversationObject.notes)
+            conversationObject["notes"]="";
+        if (!conversationObject.summary)
+            conversationObject["summary"]="";
+
+        var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
+        var header = "Conversation with " + conversationObject.company
+        var vmSelected = (conversationObject.product.match(/VM/i) != null);
+        var dbSelected = (conversationObject.product.match(/DB/i) != null);
+        var dwSelected = (conversationObject.product.match(/DW/i) != null);
+        var poolSelected = (conversationObject.product.match(/pool/i) != null);
+        var onPremSelected = (conversationObject.product.match(/on-prem/i) != null);
+        var otherSelected = (conversationObject.product.match(/other/i) != null);
+
+        var inputCard = new builder.Message(session)
+        .addAttachment({
+            contentType: "application/vnd.microsoft.card.adaptive",
+            content:
+            {
+                type: "AdaptiveCard",
+                speak: audioSummary,
+                body:
+                [
+                    {
+                        "type": "TextBlock",
+                        "text": header,
+                        "size": "large",
+                        "weight": "bolder",
+                        "separation": "strong",
+                        "wrap": "true"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Company:\***`
+                    },
+                    {
+                        "type": "Input.Text",
+                        "value": `${conversationObject.company}`,
+                        "isRequired": "true",
+                        "id": "company"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Author(s):\***`
+                    },
+                    {
+                        "type": "Input.Text",
+                        "value": `${conversationObject.authors}`,
+                        "isRequired": "true",
+                        "isMultiline": "true",
+                        "id": "authors"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Customer contact(s):\***`
+                    },
+                    {
+                        "type": "Input.Text",
+                        "value": `${conversationObject.contact}`,
+                        "isRequired": "true",
+                        "id": "contact"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Product(s):\***`
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "id": "ProductVM",
+                        "title": "SQL VM",
+                        "value": `${vmSelected}`,
+                        "valueOn": "true",
+                        "valueOff": "false"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "id": "ProductDB",
+                        "title": "SQL DB",
+                        "value": `${dbSelected}`,
+                        "valueOn": "true",
+                        "valueOff": "false"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "id": "ProductDW",
+                        "title": "SQL DW",
+                        "value": `${dwSelected}`,
+                        "valueOn": "true",
+                        "valueOff": "false"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "id": "ProductElasticPool",
+                        "title": "Elastic pool",
+                        "value": `${poolSelected}`,
+                        "valueOn": "true",
+                        "valueOff": "false"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "id": "ProductOnPrem",
+                        "title": "On-prem SQL Server",
+                        "value": `${onPremSelected}`,
+                        "valueOn": "true",
+                        "valueOff": "false"
+                    },
+                    {
+                        "type": "Input.Toggle",
+                        "id": "ProductOther",
+                        "title": "Other",
+                        "value": `${otherSelected}`,
+                        "valueOn": "true",
+                        "valueOff": "false"
+                    },    
+                    {
+                        "type": "TextBlock",
+                        "text": `Tags:`
+                    },
+                    {
+                        "type": "Input.Text",
+                        "value": `${conversationObject.tags}`,
+                        "isRequired": "false",
+                        "id": "tags"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `Summary:`
+                    },
+                    {
+                        "type": "Input.Text",
+                        "value": `${conversationObject.summary}`,
+                        "isRequired": "false",
+                        "isMultiline": "true",
+                        "id": "summary"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": `**Notes:\***`
+                    },
+                    {
+                        "type": "Input.Text",
+                        "value": `${conversationObject.notes}`,
+                        "isRequired": "true",
+                        "isMultiline": "true",
+                        "id": "notes"
+                    }
+                ],
+                actions:
+                [
+                    {
+                        "type": "Action.Submit",
+                        "title": "Discard conversation",
+                        "data": {"action": "discard"}
+                    },
+                    {
+                        "type": "Action.Submit",
+                        "title": "Submit",
+                        "data": {"action": "submit"}
+                    }
+                ]
+            }
+        });
+        
+        if (!session.message.value)
+            session.send(inputCard);
+        
+        next();
+    },
+    function(session, results)
+    {
+        if (session.message.value)
+        {
+             if (session.message.value.action === "discard")
+             {
+                session.message.value = null;
+                session.send("Discarding conversation details... Goodbye");
+                session.endConversation();
+             }
+             else if (session.message.value.action === "submit")
+             {
+                var selectedProducts="";
+                session.conversationData.contact = session.message.value.contact;
+                session.conversationData.company = session.message.value.company;
+                session.conversationData.authors = session.message.value.authors;
+                session.conversationData.tags = session.message.value.tags;
+                session.conversationData.notes = session.message.value.notes;
+                session.conversationData.summary = session.message.value.summary;
+
+                if (session.message.value.ProductVM == "true")
+                    selectedProducts += "SQL VM,";
+                if (session.message.value.ProductDB == "true")
+                    selectedProducts += "SQL DB,";
+                if (session.message.value.ProductDW == "true")
+                    selectedProducts += "SQL DW,";
+                if (session.message.value.ProductElasticPool == "true")
+                    selectedProducts += "Elastic pool,";
+                if (session.message.value.ProductOnPrem == "true")
+                    selectedProducts += "On-prem SQL Server";
+                if (session.message.value.ProductOther == "true")
+                    selectedProducts += "Other";
+                selectedProducts = selectedProducts.replace(/,$/g, "");
+
+                session.message.value = null;
+
+                if (session.conversationData.displayMarkdown)
+                    session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
+                else
+                    session.replaceDialog('/displayConversationCard', session.conversationData);
+             }
+             else
+             {
+                session.message.value = null;
+                session.send("Did not understand that response. Please edit, or discard the conversation details using the provided buttons");
+                session.replaceDialog('/displayEditableCard');
+             }
+
+        }
     }
 ]);
 
@@ -972,15 +1207,9 @@ function isValidTemplate(inputText)
 // Check if all required fields in template have been completed
 function templateComplete(inputTemplate)
 {
-    if(!inputTemplate.authors)
-        return false;
-    if(!inputTemplate.company)
-        return false;
-    if(!inputTemplate.contact)
-        return false;
-    if(!inputTemplate.product)
-        return false;
-    if(!inputTemplate.notes)
+    if ((inputTemplate.authors) && (inputTemplate.company) && (inputTemplate.contact) && (inputTemplate.product) && (inputTemplate.notes))
+        return true;
+    else
         return false;
 }
 
