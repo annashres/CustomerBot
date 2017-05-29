@@ -772,21 +772,21 @@ bot.dialog('/displayMarkdownConversationCard',
         // Conversation details
         var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
         outputMessage += `**Conversation with ${companyName}**\n\n`;
-        outputMessage += `>COMPANY*:\n\n>${conversationObject.company}\n---\n`;
-        outputMessage += `>AUTHOR(S)*:\n\n>${conversationObject.authors}\n---\n`;
-        outputMessage += `>CUSTOMER CONTACT(S)*:\n\n>${conversationObject.contact}\n---\n`;
-        outputMessage += `>PRODUCT(S)*:\n\n>${conversationObject.product}\n---\n`;
-        outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n---\n`;
-        outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n---\n`;
+        outputMessage += `>COMPANY*:\n\n>${conversationObject.company}\n\n---\n`;
+        outputMessage += `>AUTHOR(S)*:\n\n>${conversationObject.authors}\n\n---\n`;
+        outputMessage += `>CUSTOMER CONTACT(S)*:\n\n>${conversationObject.contact}\n\n---\n`;
+        outputMessage += `>PRODUCT(S)*:\n\n>${conversationObject.product}\n\n---\n`;
+        outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n\n---\n`;
+        outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n\n---\n`;
         outputMessage += `>NOTES*:\n\n>${conversationObject.notes}`;
        
         builder.Prompts.text(session, outputMessage);
     },
     function (session, results)
     {
-        if ((/^[\s]*confirm[\s]+/im.test(session.message.text)) && (templateComplete(session.conversationData)))
+        if ((/^[\s]*confirm[\s]*/im.test(session.message.text)) && (templateComplete(session.conversationData)))
             session.replaceDialog('/confirm');
-        else if (/^[\s]*discard[\s]+/im.test(session.message.text))
+        else if (/^[\s]*discard[\s]*/im.test(session.message.text))
         {
             session.send("Discarding conversation.");
             session.endConversation();
