@@ -77,11 +77,11 @@ bot.on('conversationUpdate', function(message)
 });
 
 // Register global dialog handlers
-bot.beginDialogAction('Help', '/help');
-bot.beginDialogAction('Interactive Entry', '/interactiveDataEntry');
-bot.beginDialogAction('Batch Entry', '/batchDataEntry');
-bot.beginDialogAction('Retrieve', '/fetchConversation');
-bot.beginDialogAction('Dashboard', '/viewDashboard');
+// bot.beginDialogAction('Help', '/help');
+// bot.beginDialogAction('Interactive Entry', '/interactiveDataEntry');
+// bot.beginDialogAction('Batch Entry', '/batchDataEntry');
+// bot.beginDialogAction('Retrieve', '/fetchConversation');
+// bot.beginDialogAction('Dashboard', '/viewDashboard');
 
 // Main dialog loop - this is the default dialog that launches other dialogs
 bot.dialog('/', [
@@ -133,7 +133,7 @@ bot.dialog('/sayHello',
         }
         else if (!session.userData.alias)
         {
-            var prompt = `Hello there! My sensors tell me your name is ${session.userData.name}`;
+            var prompt = `Hello there! My sensors tell me your name is ${session.userData.name}\n`;
             prompt+= `What is your Microsoft alias?`;
             builder.Prompts.text(session, prompt);
         }
@@ -220,11 +220,11 @@ bot.dialog('/firstRun',
             var optionButtons = new builder.ThumbnailCard(session)
             .title("Bot actions")
             .buttons([
-                builder.CardAction.dialogAction(session, "Help","", "Help"),
-                builder.CardAction.dialogAction(session, "Interactive Entry", "", "Add Conversation (Interactive mode)"),
-                builder.CardAction.dialogAction(session, "Batch Entry", "", "Add Conversation (Batch mode)"),
-                builder.CardAction.dialogAction(session, "Retrieve", "", "Retrieve conversation(s)"),
-                builder.CardAction.dialogAction(session, "Dashboard", "", "View conversation dashboard")
+                builder.CardAction.imBack(session, "Help", "Help"),
+                builder.CardAction.imBack(session, "Interactive Entry", "Add Conversation (Interactive mode)"),
+                builder.CardAction.imBack(session, "Batch Entry", "Add Conversation (Batch mode)"),
+                builder.CardAction.imBack(session, "Retrieve Entry", "Retrieve conversation(s)"),
+                builder.CardAction.imBack(session, "Dashboard", "View conversation dashboard")
             ]);
             
             session.send("Select one of the actions below to continue:");
@@ -296,11 +296,11 @@ bot.dialog('/selectAction',
             var optionButtons = new builder.ThumbnailCard(session)
             .title("Bot actions")
             .buttons([
-                builder.CardAction.dialogAction(session, "Help","", "Help"),
-                builder.CardAction.dialogAction(session, "Interactive Entry", "", "Add Conversation (Interactive mode)"),
-                builder.CardAction.dialogAction(session, "Batch Entry", "", "Add Conversation (Batch mode)"),
-                builder.CardAction.dialogAction(session, "Retrieve", "", "Retrieve conversation(s)"),
-                builder.CardAction.dialogAction(session, "Dashboard", "", "View conversation dashboard")
+                builder.CardAction.imBack(session, "Help", "Help"),
+                builder.CardAction.imBack(session, "Interactive Entry", "Add Conversation (Interactive mode)"),
+                builder.CardAction.imBack(session, "Batch Entry", "Add Conversation (Batch mode)"),
+                builder.CardAction.imBack(session, "Retrieve Entry", "Retrieve conversation(s)"),
+                builder.CardAction.imBack(session, "Dashboard", "View conversation dashboard")
             ]);
             
             session.send(message);
@@ -310,8 +310,13 @@ bot.dialog('/selectAction',
     function (session, results)
     {
         //Store email response template
-        var inputTemplate = results.response;
-        session.beginDialog('/batchParser', inputTemplate);
+        if (session.message.address.channelId === "email")
+        {
+            var inputTemplate = results.response;
+            session.beginDialog('/batchParser', inputTemplate);
+        }
+        else
+            session.replaceDialog('/selectAction');
     }
 
 ]);
@@ -505,7 +510,7 @@ bot.dialog('/interactiveDataEntry',
         
         session.beginDialog('/displayConversationCard', session.conversationData);
     } 
-]);
+]).triggerAction({ matches: /^Interactive Entry$/i });
 
 // Enter conversation details at once using provided template
 bot.dialog('/batchDataEntry',
@@ -529,7 +534,7 @@ bot.dialog('/batchDataEntry',
     {
         session.replaceDialog('/batchParser', results.response);
     }
-]);
+]).triggerAction({ matches: /^Batch Entry$/i });
 
 // Parse conversation details that were input via batch template or email
 bot.dialog('/batchParser',
@@ -590,7 +595,7 @@ bot.dialog('/fetchConversation',
     {
         session.send('Function not yet implemented').endDialog();
     }
-]);
+]).triggerAction({ matches: /^Retrieve Entry$/i });
 
 // Launch PowerBI dashboard Url
 bot.dialog('/viewDashboard',
@@ -603,7 +608,7 @@ bot.dialog('/viewDashboard',
         else
             session.send(`Oh no! Looks like I wasn't configured with the location of the conversation dashboard.`).endDialog();
     }
-]);
+]).triggerAction({ matches: /^Dashboard$/i });
 
 // Display conversation details using adaptive card
 bot.dialog('/displayConversationCard',
@@ -1135,11 +1140,15 @@ bot.dialog('/help', [
         session.send(`I'm ${botName}`);
         session.send(`${description}`);
         session.send(helpText);
-        session.endDialog("You can enter OK to continue ...")
+        builder.Prompts.text(session, "You can enter OK to continue ...");
+    },
+    function (session, results)
+    {
+        session.endDialog();
     }
 ]).triggerAction({
-    matches: /^\/help/i, 
-    onSelectAction: (session, args) => {session.beginDialog(args.action, args);}
+    matches: /^\/help|^help$/ig, 
+    onSelectAction: function (session, args, next) {session.beginDialog('/help', args);}
 });
 
 //Restart dialog
