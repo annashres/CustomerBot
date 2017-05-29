@@ -428,74 +428,29 @@ bot.dialog('/interactiveDataEntry',
         else
         {
             session.conversationData.contact = results.response;
-            var productSelection = new builder.Message(session)
-                .addAttachment({
-                    contentType: "application/vnd.microsoft.card.adaptive",
-                    content:
-                    {
-                        type: "AdaptiveCard",
-                        body:
-                        [
-                            {
-                                "type": "TextBlock",
-                                "text": "Which product(s) does your customer use?"
-                            },
-                            {
-                                "type": "Input.ChoiceSet",
-                                "id": "productSelection",
-                                "isMultiSelect": true,
-                                "style": "compact",
-                                "choices": 
-                                [
-                                    {
-                                      "title": "SQL VM",
-                                      "value": "SQL VM"
-                                    },
-                                    {
-                                        "title": "SQL DB",
-                                        "value": "SQL DB"
-                                    },
-                                    {
-                                        "title": "SQL DW",
-                                        "value": "SQL DW"
-                                    },
-                                    {
-                                        "title": "Elastic pool",
-                                        "value": "Elastic pool"
-                                    },
-                                    {
-                                        "title": "On-prem SQL Server",
-                                        "value": "On-prem SQL Server"
-                                    },
-                                    {
-                                        "title": "Other",
-                                        "value": "Other"
-                                    }
-                                ]
-                            }           
-                        ],
-                        actions:
-                        [
-                            {
-                                "type": "Action.Submit",
-                                "title": "Submit",
-                                "data": { "message" : "productSelection"}  
-                            }
-                        ]
-                    }
-                });
-
-                session.send(productSelection);
-                next();
-            }
+            session.send("Which product(s) does your customer use?");
+            builder.Prompts.text(session, "Enter a comma-separated list of the following options: {SQL VM, SQL DB, SQL DW, Elastic pool, On-prem SQL Server, Other}");
+        }
     },
     function (session, results)
     {
-        if (session.message.value)
-        {
-            session.conversationData.product = session.message.value.productSelection;
-            builder.Prompts.text(session, "Please paste in below any notes you took down during the call");
-        }
+        var inputText = results.response;
+        var productSelection = "";
+
+        if (inputText.match(/VM/i))
+            productSelection += "SQL VM,";
+        if (inputText.match(/DB/i))
+            productSelection += "SQL DB,";
+        if (inputText.match(/pool|elastic/i))
+            productSelection += "Elastic pool,";
+        if (inputText.match(/on-prem|server/i))
+            productSelection += "On-prem SQL Server,";
+        if (inputText.match(/other/i))
+            productSelection += "Other,";
+        productSelection.replace(/,$/g, "");
+
+        session.conversationData.product = productSelection;
+        builder.Prompts.text(session, "Please paste in below any notes you took down during the call");
     },
     function (session, results)
     {
@@ -508,7 +463,10 @@ bot.dialog('/interactiveDataEntry',
         session.conversationData.tags = results.response;
         session.send("That's all I need. Thanks for the info.");
         
-        session.beginDialog('/displayConversationCard', session.conversationData);
+        if (session.message.address.channelId === "emulator")
+            session.beginDialog('/displayConversationCard', session.conversationData);
+        else
+            session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
     } 
 ]).triggerAction({ matches: /^Interactive Entry$/i });
 
@@ -583,8 +541,10 @@ bot.dialog('/batchParser',
 
         if (session.conversationData.displayMarkdown)
             session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
-        else
+        else if (session.message.address.channelId === "emulator")
             session.beginDialog('/displayConversationCard', session.conversationData);
+        else
+            session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
     }
 ]);
 
@@ -1064,8 +1024,10 @@ bot.dialog('/displayEditableCard',
 
                 if (session.conversationData.displayMarkdown)
                     session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
-                else
+                else if (session.message.address.channelId === "emulator")
                     session.replaceDialog('/displayConversationCard', session.conversationData);
+                else
+                    session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
              }
              else
              {
@@ -1083,13 +1045,14 @@ bot.dialog('/editConversation', [
     function (session, args, next)
     {
         session.send("Updating conversation details...");
+        var botChannel = session.message.address.channelId;
 
-        if ((!args) && (!session.conversationData.displayMarkdown))
+        if ((!args) && (botChannel == "emulator"))
         {
             session.send("I did not receive any parameters to change. Resending conversation card...");
             session.replaceDialog('/displayConversationCard', session.conversationData);
         }
-        else if ((!args) && (session.conversationData.displayMarkdown))
+        else if (!args)
         {
             session.send("I did not receive any parameters to change. Resending conversation card...");
             session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
@@ -1163,18 +1126,11 @@ bot.dialog('/home', [
 bot.dialog('/reset', [
     function (session, args, next)
     {
-        session.userData.name = null;
-        session.userData.firstName = null;
-        session.conversationData.authors = null;
-        session.conversationData.company = null;
-        session.conversationData.contact = null;
-        session.conversationData.product = null;
-        session.conversationData.notes = null;
-        session.conversationData.tags = null;
-        session.conversationData.summary = null;
-        session.message.text = null;
-        session.endDialog("Resetting to default state...");
-        session.beginDialog('/');
+        session.perUserInConversationData = {};
+        session.userData = {};
+        session.conversationData = {};
+        session.send("Resetting to default state...");
+        session.replaceDialog('/');
     }
 ]).triggerAction({ matches: /^\/reset/i });
 
