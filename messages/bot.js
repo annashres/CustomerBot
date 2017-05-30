@@ -421,8 +421,8 @@ bot.dialog('/batchDataEntry',
         message+= "**Company:** {company name} \n\n";
         message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
         message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
-        message+= "**Tags (optional):** {tag}, {tag} ... \n\n";
-        message+= "**Summary (optional):** {enter short summary of note here}\n\n";
+        message+= "**Tags(optional):** {tag}, {tag} ... \n\n";
+        message+= "**Summary(optional):** {enter short summary of note here}\n\n";
         message+= "**Notes:** {enter note text here} \n\n";
 
         builder.Prompts.text(session, message);
@@ -469,11 +469,11 @@ bot.dialog('/batchParser',
                     session.conversationData["contact"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
                     session.conversationData["product"] = templateTokens[token+1];
-                else if (templateTokens[token].search(/tags?:|tags?[ (optional)]+:/i) != -1)
+                else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
                     session.conversationData["tags"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/notes[*]?:/i) != -1)
                     session.conversationData["notes"] = templateTokens[token+1];
-                else if (templateTokens[token].search(/summary:|summary[ (optional)]+/i) != -1)
+                else if (templateTokens[token].search(/summary:|summary[(optional)]+/i) != -1)
                     session.conversationData["summary"] = templateTokens[token+1];
             }
         }
