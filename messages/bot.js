@@ -4,10 +4,12 @@ var botbuilder_azure = require("botbuilder-azure");
 
 var Sequelize = require('sequelize');
 var Fuse = require('fuse.js');
-var Connection = require('tedious').Connection;
-var Request = require('tedious').Request;
-var TYPES = require('tedious').TYPES;
+// var Connection = require('tedious').Connection;
+// var Request = require('tedious').Request;
+// var TYPES = require('tedious').TYPES;
 var path = require('path');
+var dbconnection = require("seriate");
+var botdisplay = require('./botdisplay.js');
 
 var useEmulator = (process.env.NODE_ENV == 'development');
 
@@ -40,7 +42,7 @@ if (process.env.DB_SERVER)
         Company: Sequelize.STRING,
         Contact: Sequelize.STRING,
         Product: Sequelize.STRING,
-        Notes: Sequelize.STRING,
+        Notes: Sequelize.STRING(3000),
         Summary: Sequelize.STRING,
         Tags: Sequelize.STRING
     });
@@ -63,6 +65,19 @@ var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure
 var bot = new builder.UniversalBot(connector);
 bot.localePath(path.join(__dirname, './locale'));
 
+
+// Create connection to database
+var config = 
+{
+    "user": process.env.DB_ADMIN,
+    "password": process.env.DB_PASSWORD,
+    "server": process.env.DB_SERVER,
+    "database": process.env.DB_NAME,
+
+    options: {encrypt: true}
+}
+dbconnection.setDefaultConfig(config);
+
 // Wake bot up when a user joins the channel
 bot.on('conversationUpdate', function(message)
 {
@@ -75,13 +90,6 @@ bot.on('conversationUpdate', function(message)
         });
     }
 });
-
-// Register global dialog handlers
-// bot.beginDialogAction('Help', '/help');
-// bot.beginDialogAction('Interactive Entry', '/interactiveDataEntry');
-// bot.beginDialogAction('Batch Entry', '/batchDataEntry');
-// bot.beginDialogAction('Retrieve', '/fetchConversation');
-// bot.beginDialogAction('Dashboard', '/viewDashboard');
 
 // Main dialog loop - this is the default dialog that launches other dialogs
 bot.dialog('/', [
@@ -349,75 +357,6 @@ bot.dialog('/interactiveDataEntry',
         else
         {
             session.conversationData.company = results.response;
-            
-            if (process.env.DB_SERVER)
-            {
-                //search for similar companies
-                // Create connection to database
-                var config = {
-                userName: process.env.DB_ADMIN, // update me
-                password: process.env.DB_PASSWORD, // update me
-                server: process.env.DB_SERVER,
-                    options: {
-                        database: process.env.DB_NAME,
-                        rowCollectionOnRequestCompletion: true,
-                        encrypt: true
-                    }
-                }
-
-                var connection = new Connection(config);
-
-                // Attempt to connect and execute queries if connection goes through
-                connection.on('connect', function(err) {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log('Connected');
-                    console.log('Reading rows from the Table...');
-                    // Read all rows from table
-                    var request = new Request(
-                    'SELECT DISTINCT company FROM feedbacks;',
-                    function(err, rowCount, rows) {
-                        if (err) {
-                        console.log(err);
-                        } else {
-                        var companies = rows.map(row => { return { name: row[0].value } });
-                        console.log(rowCount + ' row(s) returned');
-                        // console.log(rows);
-                        var options = {
-                            shouldSort: true,
-                            includeMatches: true,
-                            minMatchCharLength: 1,
-                            keys: [
-                                "name"
-                            ]
-                        };
-                        var fuse = new Fuse(companies, options); // "list" is the item array
-                        var result = fuse.search(session.conversationData.company);
-                        console.log(companies);
-                        console.log(result);
-                        var matches=result.map(function(entry) {return entry.item.name;})
-                        builder.Prompts.text(session, "I found these companies that are similar to " + session.conversationData.company + "did you mean any of these companies? " + matches + ". please type in a company name.");
-                        connection.close();
-                        }
-                    });
-                    // Execute SQL statement
-                    connection.execSql(request);
-                }
-                });
-            }
-            else
-                next();
-        }
-    },
-    function (session, results, next)
-    {
-        if (session.message.value)
-            next();
-        else
-        {
-            if (process.env.DB_SERVER)
-                session.conversationData.company = results.response;
             builder.Prompts.text(session, "Who did you speak with at " + session.conversationData.company + "?");
         }
     },
@@ -429,7 +368,7 @@ bot.dialog('/interactiveDataEntry',
         {
             session.conversationData.contact = results.response;
             session.send("Which product(s) does your customer use?");
-            builder.Prompts.text(session, "Enter a comma-separated list of the following options: {SQL VM, SQL DB, SQL DW, Elastic pool, On-prem SQL Server, Other}");
+            builder.Prompts.text(session, "Available options (use comma to enter multiple products): {SQL VM, SQL DB, SQL DW, Elastic pool, On-prem SQL Server, Other}");
         }
     },
     function (session, results)
@@ -551,9 +490,105 @@ bot.dialog('/batchParser',
 // Retrieve last 10 conversations for an input company
 bot.dialog('/fetchConversation',
 [
-    function(session)
+    function(session, args, next)
     {
-        session.send('Function not yet implemented').endDialog();
+        if (session.message.text.match(/^conv#/))
+        {
+            var selection = session.message.text.split(':')[1].trim();
+            var selectedConversation = session.conversationData.retrievedConversations[selection];
+            var outputCard;
+
+            if (session.message.address.channelId === "emulator")
+                outputCard = botdisplay.renderCard(session, builder, selectedConversation);
+            else
+                outputCard = botdisplay.renderText("", selectedConversation);
+
+            session.send(outputCard);
+            session.conversationData.retrievedConversations = null;
+            session.endDialog("Enter OK to return to home screen");
+        }
+        else if (process.env.DB_SERVER)
+            builder.Prompts.text(session, "Which company would you like to retrieve conversations for?");
+        else if (!process.env.DB_SERVER)
+            session.endDialog("This function is not available. I have not been hooked up to a database of previous conversations.");
+    },
+    function (session, results, next)
+    {
+        // Get input company to search for
+        if(!session.dialogData.inputCompany)
+            session.dialogData.inputCompany = results.response;
+
+        // Find input company in feedback database
+        var sqlCompanyQuery = "SELECT DISTINCT company FROM feedbacks;";
+
+        dbconnection.execute({
+            query: sqlCompanyQuery
+        }).then (function (results)
+        {
+            var companies = results
+            var searchOptions = 
+            {
+                shouldSort: true,
+                includeMatches: true,
+                minMatchCharLength: 1,
+                keys: ["company"]
+            }
+            var fuse = new Fuse(companies, searchOptions);
+
+            // Search database for input company name and companies with matching names
+            var result = fuse.search(session.dialogData.inputCompany);
+            var matches = result.map(function (entry) {return entry.item.company;});
+            console.log(matches);
+
+            if (matches.length == 0)
+            {
+                session.send(`There is no record of '${session.dialogData.inputCompany}' in the database. Please refine your search or try another company.`);
+                session.endDialog("Enter OK to return to home screen and try again.");
+            }    
+            else if (matches.length > 1)
+            {
+                var prompt = `I found a few companies that match '${session.dialogData.inputCompany}'. Please select one company from the choices below`;
+                builder.Prompts.choice(session, prompt, matches);
+            }
+            else if (matches.length == 1)
+            {
+                var prompt = `Found matching company '${matches}'. Retrieving last 10 conversations...`;
+                session.send(prompt);
+                session.dialogData.inputCompany = matches;
+                next();
+            }
+        }, function (err)
+        {
+            console.error("Could not search database for provided company name:", err);
+        });
+    },
+    function (session, results)
+    {
+        if (results.response)
+            session.dialogData.inputCompany = results.response.entity;
+
+        var conversationListQuery = `SELECT TOP 10 [id], [Name],[Authors],[Company],[Contact],[Product],[Notes],[Summary],[Tags],[updatedAt] 
+                                     FROM [dbo].[feedbacks] 
+                                     WHERE [Company] = '${session.dialogData.inputCompany}'
+                                     ORDER BY [updatedAt] DESC`;
+
+        dbconnection.execute({
+            query: conversationListQuery
+        }).then (function (results)
+        {
+            var conversations = botdisplay.renderSummaryCard(session, builder, results);
+
+            var outputCards = new builder.Message(session)
+                .attachmentLayout(builder.AttachmentLayout.carousel)
+                .attachments(conversations);
+
+            session.send(outputCards);
+
+        }, function (err)
+        {
+            console.error(`Could not retrieve stored conversations for ${session.dialogData.inputCompany}:`, err);
+        });
+
     }
 ]).triggerAction({ matches: /^Retrieve Entry$/i });
 
@@ -731,55 +766,26 @@ bot.dialog('/displayMarkdownConversationCard',
 [
     function (session, args, next)
     {
-        var conversationObject;
-        var outputMessage;
-        
-        if (args)
-            conversationObject = args;
-        else
-            conversationObject = new Object();
-
-        if (!conversationObject.contact)
-            conversationObject["contact"]="";
-        if (!conversationObject.product)
-            conversationObject["product"]="";
-        if (!conversationObject.company)
-            conversationObject["company"]="";
-        if (!conversationObject.authors)
-            conversationObject["authors"]="";
-        if (!conversationObject.tags)
-            conversationObject["tags"]="";
-        if (!conversationObject.notes)
-            conversationObject["notes"]="";
-        if (!conversationObject.summary)
-            conversationObject["summary"]="";
+        var prompt;
+        var conversationObject = args || new Object();
 
         // Confirmation and edit instructions
         if (templateComplete(conversationObject))
         {
-            outputMessage = "**Please confirm the information below is accurate**\n";
-            outputMessage += "* Reply with **Confirm** to accept the conversation details below.\n";
-            outputMessage += "* Reply with **Discard** to discard the conversation.\n";
-            outputMessage += "* **Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
+            prompt = "**Please confirm the information below is accurate**\n";
+            prompt += "* Reply with **Confirm** to accept the conversation details below.\n";
+            prompt += "* Reply with **Discard** to discard the conversation.\n";
+            prompt += "* **Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
         }
         else
         {
-            outputMessage = "**Please complete all required sections in the template below.**\n";
-            outputMessage += "* Reply with **Discard** to discard the conversation.\n";
-            outputMessage += "* **Edit the required details below** and reply back to continue. Required sections are marked with an asterisk(*).\n\n\n\n";
+            prompt = "**Please complete all required sections in the template below.**\n";
+            prompt += "* Reply with **Discard** to discard the conversation.\n";
+            prompt += "* **Edit the required details below** and reply back to continue. Required sections are marked with an asterisk(*).\n\n\n\n";
         }
 
         // Conversation details
-        var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
-        outputMessage += `**Conversation with ${companyName}**\n\n`;
-        outputMessage += `>COMPANY*:\n\n>${conversationObject.company}\n\n---\n`;
-        outputMessage += `>AUTHOR(S)*:\n\n>${conversationObject.authors}\n\n---\n`;
-        outputMessage += `>CUSTOMER CONTACT(S)*:\n\n>${conversationObject.contact}\n\n---\n`;
-        outputMessage += `>PRODUCT(S)*:\n\n>${conversationObject.product}\n\n---\n`;
-        outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n\n---\n`;
-        outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n\n---\n`;
-        outputMessage += `>NOTES*:\n\n>${conversationObject.notes}`;
-       
+        var outputMessage = botdisplay.renderText(prompt, conversationObject);
         builder.Prompts.text(session, outputMessage);
     },
     function (session, results)
