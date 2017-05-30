@@ -469,11 +469,11 @@ bot.dialog('/batchParser',
                     session.conversationData["contact"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
                     session.conversationData["product"] = templateTokens[token+1];
-                else if (templateTokens[token].search(/tags?:/i) != -1)
+                else if (templateTokens[token].search(/tags?:|tags?[ (optional)]+:/i) != -1)
                     session.conversationData["tags"] = templateTokens[token+1];
                 else if (templateTokens[token].search(/notes[*]?:/i) != -1)
                     session.conversationData["notes"] = templateTokens[token+1];
-                else if (templateTokens[token].search(/summary:/i) != -1)
+                else if (templateTokens[token].search(/summary:|summary[ (optional)]+/i) != -1)
                     session.conversationData["summary"] = templateTokens[token+1];
             }
         }
@@ -547,7 +547,8 @@ bot.dialog('/fetchConversation',
             }    
             else if (matches.length > 1)
             {
-                var prompt = `I found a few companies that match '${session.dialogData.inputCompany}'. Please select one company from the choices below`;
+                session.send(`I found a few companies that match '${session.dialogData.inputCompany}`);
+                var prompt = "Please select one company from the choices below:\n\n";
                 builder.Prompts.choice(session, prompt, matches);
             }
             else if (matches.length == 1)
