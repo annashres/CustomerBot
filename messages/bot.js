@@ -242,8 +242,13 @@ bot.dialog('/firstRun',
     function (session, results)
     {
         //Store email response template
-        var inputTemplate = results.response;
-        session.beginDialog('/batchParser', inputTemplate);
+        if (session.message.address.channelId === "email")
+        {
+            var inputTemplate = results.response;
+            session.beginDialog('/batchParser', inputTemplate);
+        }
+        else
+            session.replaceDialog('/selectAction');
     }
    
 ]);
@@ -611,111 +616,25 @@ bot.dialog('/displayConversationCard',
 [
     function(session, args, next)
     {
-        var conversationObject;
-        
-        if (args)
-            conversationObject = args;
-        else
-            conversationObject = new Object();
-
-        if (!conversationObject.contact)
-            conversationObject["contact"]="";
-        if (!conversationObject.product)
-            conversationObject["product"]="";
-        if (!conversationObject.company)
-            conversationObject["company"]="";
-        if (!conversationObject.authors)
-            conversationObject["authors"]="";
-        if (!conversationObject.tags)
-            conversationObject["tags"]="";
-        if (!conversationObject.notes)
-            conversationObject["notes"]="";
-        if (!conversationObject.summary)
-            conversationObject["summary"]="";
-
-        var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
-        var header = "Conversation with " + conversationObject.company
-        
-        var outputCard = new builder.Message(session)
-        .addAttachment({
-            contentType: "application/vnd.microsoft.card.adaptive",
-            content:
+        var availableActions = [
             {
-                type: "AdaptiveCard",
-                speak: audioSummary,
-                body:
-                [
-                    {
-                        "type": "TextBlock",
-                        "text": header,
-                        "size": "large",
-                        "weight": "bolder",
-                        "separation": "strong",
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Company:\***\n\n ${conversationObject.company}`,
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Author(s):\***\n\n ${conversationObject.authors}`,
-                        "separation": "strong",
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Customer contact(s):\***\n\n ${conversationObject.contact}`,
-                        "separation": "strong",
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Product(s):\***\n\n ${conversationObject.product}`,
-                        "separation": "strong",
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `Tags:\n\n ${conversationObject.tags}`,
-                        "separation": "strong",
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `Summary:\n\n ${conversationObject.summary}`,
-                        "separation": "strong",
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Notes:\***\n\n ${conversationObject.notes}`,
-                        "separation": "strong",
-                        "wrap": "true"
-                    }
-                ],
-                actions:
-                [
-                    {
-                        "type": "Action.Submit",
-                        "title": "Discard conversation",
-                        "data": {"message": "discard"}
-                    },
-                    {
-                        "type": "Action.Submit",
-                        "title": "Edit conversation",
-                        "data": {"message": "edit"}
-                    },
-                    {
-                        "type": "Action.Submit",
-                        "title": "Confirm",
-                        "data": { "message" : "confirm"}  
-                    }
-                ]
+                "type": "Action.Submit",
+                "title": "Discard conversation",
+                "data": {"message": "discard"}
+            },
+            {
+                "type": "Action.Submit",
+                "title": "Edit conversation",
+                "data": {"message": "edit"}
+            },
+            {
+                "type": "Action.Submit",
+                "title": "Confirm",
+                "data": { "message" : "confirm"}  
             }
-        });
-
+        ]
+        var outputCard = botdisplay.renderCard(session, builder, args, availableActions)        
+        
         if (!session.message.value)
         {
             session.send("Please confirm or edit the conversation details below:");
@@ -808,186 +727,9 @@ bot.dialog('/displayEditableCard',
 [
     function (session, args, next)
     {
-        var conversationObject;
-       
-        if (args)
-            conversationObject = args;
-        else
-            conversationObject = new Object();
-
-        if (!conversationObject.contact)
-            conversationObject["contact"]="";
-        if (!conversationObject.product)
-            conversationObject["product"]="";
-        if (!conversationObject.company)
-            conversationObject["company"]="";
-        if (!conversationObject.authors)
-            conversationObject["authors"]="";
-        if (!conversationObject.tags)
-            conversationObject["tags"]="";
-        if (!conversationObject.notes)
-            conversationObject["notes"]="";
-        if (!conversationObject.summary)
-            conversationObject["summary"]="";
-
-        var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
-        var header = "Conversation with " + conversationObject.company
-        var vmSelected = (conversationObject.product.match(/VM/i) != null);
-        var dbSelected = (conversationObject.product.match(/DB/i) != null);
-        var dwSelected = (conversationObject.product.match(/DW/i) != null);
-        var poolSelected = (conversationObject.product.match(/pool/i) != null);
-        var onPremSelected = (conversationObject.product.match(/on-prem/i) != null);
-        var otherSelected = (conversationObject.product.match(/other/i) != null);
-
-        var inputCard = new builder.Message(session)
-        .addAttachment({
-            contentType: "application/vnd.microsoft.card.adaptive",
-            content:
-            {
-                type: "AdaptiveCard",
-                speak: audioSummary,
-                body:
-                [
-                    {
-                        "type": "TextBlock",
-                        "text": header,
-                        "size": "large",
-                        "weight": "bolder",
-                        "separation": "strong",
-                        "wrap": "true"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Company:\***`
-                    },
-                    {
-                        "type": "Input.Text",
-                        "value": `${conversationObject.company}`,
-                        "isRequired": "true",
-                        "id": "company"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Author(s):\***`
-                    },
-                    {
-                        "type": "Input.Text",
-                        "value": `${conversationObject.authors}`,
-                        "isRequired": "true",
-                        "isMultiline": "true",
-                        "id": "authors"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Customer contact(s):\***`
-                    },
-                    {
-                        "type": "Input.Text",
-                        "value": `${conversationObject.contact}`,
-                        "isRequired": "true",
-                        "id": "contact"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Product(s):\***`
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "id": "ProductVM",
-                        "title": "SQL VM",
-                        "value": `${vmSelected}`,
-                        "valueOn": "true",
-                        "valueOff": "false"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "id": "ProductDB",
-                        "title": "SQL DB",
-                        "value": `${dbSelected}`,
-                        "valueOn": "true",
-                        "valueOff": "false"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "id": "ProductDW",
-                        "title": "SQL DW",
-                        "value": `${dwSelected}`,
-                        "valueOn": "true",
-                        "valueOff": "false"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "id": "ProductElasticPool",
-                        "title": "Elastic pool",
-                        "value": `${poolSelected}`,
-                        "valueOn": "true",
-                        "valueOff": "false"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "id": "ProductOnPrem",
-                        "title": "On-prem SQL Server",
-                        "value": `${onPremSelected}`,
-                        "valueOn": "true",
-                        "valueOff": "false"
-                    },
-                    {
-                        "type": "Input.Toggle",
-                        "id": "ProductOther",
-                        "title": "Other",
-                        "value": `${otherSelected}`,
-                        "valueOn": "true",
-                        "valueOff": "false"
-                    },    
-                    {
-                        "type": "TextBlock",
-                        "text": `Tags:`
-                    },
-                    {
-                        "type": "Input.Text",
-                        "value": `${conversationObject.tags}`,
-                        "isRequired": "false",
-                        "id": "tags"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `Summary:`
-                    },
-                    {
-                        "type": "Input.Text",
-                        "value": `${conversationObject.summary}`,
-                        "isRequired": "false",
-                        "isMultiline": "true",
-                        "id": "summary"
-                    },
-                    {
-                        "type": "TextBlock",
-                        "text": `**Notes:\***`
-                    },
-                    {
-                        "type": "Input.Text",
-                        "value": `${conversationObject.notes}`,
-                        "isRequired": "true",
-                        "isMultiline": "true",
-                        "id": "notes"
-                    }
-                ],
-                actions:
-                [
-                    {
-                        "type": "Action.Submit",
-                        "title": "Discard conversation",
-                        "data": {"action": "discard"}
-                    },
-                    {
-                        "type": "Action.Submit",
-                        "title": "Submit",
-                        "data": {"action": "submit"}
-                    }
-                ]
-            }
-        });
-        
+        var inputCard = botdisplay.renderEditableCard(session, builder, args);
+     
+        // Display editable card if it hasn't been displayed already
         if (!session.message.value)
             session.send(inputCard);
         
@@ -1026,6 +768,7 @@ bot.dialog('/displayEditableCard',
                 if (session.message.value.ProductOther == "true")
                     selectedProducts += "Other";
                 selectedProducts = selectedProducts.replace(/,$/g, "");
+                session.conversationData.product = selectedProducts;
 
                 session.message.value = null;
 
