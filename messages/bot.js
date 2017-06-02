@@ -409,6 +409,8 @@ bot.dialog('/interactiveDataEntry',
         
         if (session.message.address.channelId === "emulator")
             session.beginDialog('/displayConversationCard', session.conversationData);
+        else if (session.message.address.channelId === "msteams")
+            session.beginDialog('/displayConversationCard', session.conversationData);
         else
             session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
     } 
