@@ -467,19 +467,47 @@ bot.dialog('/batchParser',
             for (var token = 0; token<templateTokens.length; token++)
             {
                 if (templateTokens[token].search(/author[(s)*]*?:/i) != -1)
-                    session.conversationData["authors"] = templateTokens[token+1];
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
+                        session.conversationData["authors"] = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/company[*]?:/i) != -1)
-                    session.conversationData["company"] = templateTokens[token+1];
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{company name}/i) == -1)
+                        session.conversationData["company"] = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
-                    session.conversationData["contact"] = templateTokens[token+1];
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{customer contact name}/i) == -1)
+                        session.conversationData["contact"] = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
-                    session.conversationData["product"] = templateTokens[token+1];
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/i) == -1)
+                        session.conversationData["product"] = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
-                    session.conversationData["tags"] = templateTokens[token+1];
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{tag}/i) == -1)
+                        session.conversationData["tags"] = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/notes[*]?:/i) != -1)
-                    session.conversationData["notes"] = templateTokens[token+1];
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
+                        session.conversationData["notes"] = templateTokens[token+1];
+                }
                 else if (templateTokens[token].search(/summary:|summary[(optional)]+/i) != -1)
-                    session.conversationData["summary"] = templateTokens[token+1];
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
+                        session.conversationData["summary"] = templateTokens[token+1];
+                }
             }
         }
 
@@ -637,7 +665,7 @@ bot.dialog('/displayConversationCard',
         
         if (!session.message.value)
         {
-            session.send("Please confirm or edit the conversation details below:");
+            //session.send("Please confirm or edit the conversation details below:");
             session.send(outputCard);
         }
         
@@ -927,6 +955,33 @@ function templateComplete(inputTemplate)
     else
         return false;
 }
+
+//Check if input template is default template
+function isDefaultTemplate(inputText)
+{
+    var aliasSearchToken = /{Microsoft alias}/ig;
+    var companySearchToken = /{company name}/ig;
+    var contactSearchToken = /{customer contact name}/ig;
+    var productSearchToken = /{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/ig;
+    var notesSearchToken = /{enter note text here}/ig;
+    var summarySearchToken = /{enter short summary of note here}/ig;
+    var tagSearchToken = /{tag}/ig;
+
+    if (inputText.search(aliasSearchToken) != -1)
+        return true;
+    else if (inputText.search(companySearchToken) != -1)
+        return true;
+    else if (inputText.search(contactSearchToken) != -1)
+        return true;
+    else if (inputText.search(productSearchToken) != -1)
+        return true;
+    else if (inputText.search(notesSearchToken) != -1)
+        return true;
+    else
+        return false;
+}
+
+
 
 module.exports = { 
     connector: connector,
