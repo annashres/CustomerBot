@@ -194,28 +194,25 @@ bot.dialog('/firstRun',
             }
             else
             {    
-                var message = `Greetings ${userName},\n\n`;
+                var defaultTemplate = getConversationTemplate();
+                var message = `Greetings ${userName},\n\n\n\n`;
 
                 message+= `I'm ${botName}. ${description} \n\n\n\n`;
                 message+= "Below you will find the template I need to record your conversation.\n\n"
                 message+= "Reply back with the completed template to continue:\n\n---\n\n";
-                message+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
-                message+= "**Company:** {company name} \n\n";
-                message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
-                message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
-                message+= "**Tags (optional):** {tag}, {tag} ... \n\n";
-                message+= "**Summary (optional):** {enter short summary of note here}";
-                message+= "**Notes:** {enter note text here} \n\n\n\n";
+                message+= defaultTemplate;
 
-                message+= "Here's an example completed template:\n\n";
-                message+= "Authors: madhuka, ayolubek, anshrest, vinsonyu \n\n";
-                message+= "Company: Wonka Chocolate Factory \n\n";
-                message+= "Contact: Willy Wonka \n\n";
-                message+= "Product: SQL VM, SQL DB \n\n";
-                message+= "Tags: chocolate, column-store \n\n";
-                message+= "Summary: Mr. Wonka described the challenges he's facing migrating from SQLVM to SQLDB \n\n";
-                message+= "Notes: Mr. Wonka is the eccentric owner of the world-famous Wonka chocolate factory. He employees mystery workers called Oompa-Loompas to operate his chocolate factory. The Oompa-Loompas use SQL VM to crank out batches of chocolate for the millions of customers of Wonka chocolate. Their massive growth has led them to worry about how much time they're spending on maintaining infrastructure"
-                message+= "instead of making delicious chocolates. They are interested in Azure SQL database but are concerned about the security implications of a public endpoint. The secret chocolate recipe algorithm cannot fall into the wrong hands or it will spell disaster for the company."
+                message+= "\n\n---\n\nHere's an example completed template:\n\n";
+                message+= "**Authors:** madhuka, ayolubek, anshrest, vinsonyu \n\n";
+                message+= "**Company:** Wonka Chocolate Factory \n\n";
+                message+= "**Contact:** Willy Wonka \n\n";
+                message+= "**Product:** SQL VM, SQL DB \n\n";
+                message+= "**Tags:** chocolate, column-store \n\n";
+                message+= "**Summary:** Mr. Wonka described the challenges he's facing migrating from SQLVM to SQLDB \n\n";
+                message+= `**Notes:** Mr. Wonka is the eccentric owner of the world-famous Wonka chocolate factory. He employees mystery workers called Oompa-Loompas to operate his chocolate factory. 
+                The Oompa-Loompas use SQL VM to crank out batches of chocolate for the millions of customers of Wonka chocolate. Their massive growth has led them to worry about how much time they're 
+                spending on maintaining infrastructure instead of making delicious chocolates. They are interested in Azure SQL database but are concerned about the security implications of a public endpoint. 
+                The secret chocolate recipe algorithm cannot fall into the wrong hands or it will spell disaster for the company.`
 
                 builder.Prompts.text(session, message);
             }
@@ -269,7 +266,7 @@ bot.dialog('/selectAction',
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
-                var message = `Greetings ${userName},\n\n`;
+                var message = `Greetings ${userName},\n\n\n\n`;
 
                 message+= "I see you've sent a previous conversation in the email body. Give me a few minutes to process this information ...";
                 session.send(message);
@@ -278,7 +275,7 @@ bot.dialog('/selectAction',
             // Parse conversation template if bot was sent a template as part of greeting
             else if (isValidTemplate(session.message.text))
             {
-                var message = `Greetings ${userName},\n\n`;
+                var message = `Greetings ${userName},\n\n\n\n`;
 
                 message+= "I see you've included a few details from your customer conversation in the email body. Give me a few minutes to process this information ...";
                 session.send(message);
@@ -287,19 +284,14 @@ bot.dialog('/selectAction',
             else
             {
                 var dashboardURL = process.env.DashboardUrl;
+                var defaultTemplate = getConversationTemplate();
                 message = `Greetings ${userName}, \n\n`;
 
                 message+= `I'm guessing you have a new customer conversation for me. If you're looking to see the conversations already stored in the archive instead, you can [take a look at the customer conversation dashboard](${dashboardURL}). \n\n`
                 message+= "Below you will find the template I need to record your conversation.\n\n"
                 message+= "Reply back with the completed template to continue:\n\n---\n\n";
-                message+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
-                message+= "**Company:** {company name} \n\n";
-                message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
-                message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
-                message+= "**Tags (optional):** {tag}, {tag} ... \n\n";
-                message+= "**Summary (optional):** {enter short summary of note here}\n\n";
-                message+= "**Notes:** {enter note text here} \n\n\n\n";
-
+                message+= defaultTemplate;
+               
                 builder.Prompts.text(session, message);
             }
         }
@@ -420,16 +412,11 @@ bot.dialog('/batchDataEntry',
     function(session, args, next)
     {
         var userName = session.userData.firstName;
+        var defaultTemplate = getConversationTemplate();
         var message = "Below you will find the template I need to record your conversation.\n\n"
         message+= "Reply back with the completed template to continue:\n\n---\n\n";
-        message+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
-        message+= "**Company:** {company name} \n\n";
-        message+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
-        message+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
-        message+= "**Tags(optional):** {tag}, {tag} ... \n\n";
-        message+= "**Summary(optional):** {enter short summary of note here}\n\n";
-        message+= "**Notes:** {enter note text here} \n\n";
-
+        message+= defaultTemplate;
+        
         builder.Prompts.text(session, message);
     },
     function(session, results)
@@ -447,7 +434,14 @@ bot.dialog('/batchParser',
         if (isEmail(session.message.text))
         {
             // Email parser function goes here
-            session.send("Parsing forwarded email");
+            var emailAuthors = session.message.text.match(/from: [\w \[:@.\]]+/ig);
+            var authorsList, companyName, companyContacts;
+            
+            for (var email=0; email < emailAuthors.length; email++)
+            {
+                // Parse out email sender
+                var emailSender = emailAuthors[email].split('Sent:');
+            }
             session.conversationData.notes = session.message.text;
         }
         // Parse input conversation template
@@ -468,9 +462,19 @@ bot.dialog('/batchParser',
             {
                 if (templateTokens[token].search(/author[(s)*]*?:/i) != -1)
                 {
-                    // Ignore input if it's default text
+                    // Ignore input if it's default text, include otherwise
                     if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
-                        session.conversationData["authors"] = templateTokens[token+1];
+                    {
+                        if (templateTokens[token+1].includes(session.userData.alias))
+                            session.conversationData["authors"] = templateTokens[token+1];
+                        else
+                        {
+                            // Include author alias if it is not included in authors list
+                            var authorsList = session.userData.alias + "," + templateTokens[token+1];
+                            authorsList = authorsList.replace(/,$/g, "");
+                            session.conversationData["authors"] = authorsList;
+                        }    
+                    }
                 }
                 else if (templateTokens[token].search(/company[*]?:/i) != -1)
                 {
@@ -956,29 +960,19 @@ function templateComplete(inputTemplate)
         return false;
 }
 
-//Check if input template is default template
-function isDefaultTemplate(inputText)
+//Return default conversationTemplate
+function getConversationTemplate()
 {
-    var aliasSearchToken = /{Microsoft alias}/ig;
-    var companySearchToken = /{company name}/ig;
-    var contactSearchToken = /{customer contact name}/ig;
-    var productSearchToken = /{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/ig;
-    var notesSearchToken = /{enter note text here}/ig;
-    var summarySearchToken = /{enter short summary of note here}/ig;
-    var tagSearchToken = /{tag}/ig;
+    var conversationTemplate;
 
-    if (inputText.search(aliasSearchToken) != -1)
-        return true;
-    else if (inputText.search(companySearchToken) != -1)
-        return true;
-    else if (inputText.search(contactSearchToken) != -1)
-        return true;
-    else if (inputText.search(productSearchToken) != -1)
-        return true;
-    else if (inputText.search(notesSearchToken) != -1)
-        return true;
-    else
-        return false;
+    conversationTemplate+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
+    conversationTemplate+= "**Company:** {company name} \n\n";
+    conversationTemplate+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
+    conversationTemplate+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
+    conversationTemplate+= "**Tags(optional):** {tag}, {tag} ... \n\n";
+    conversationTemplate+= "**Summary(optional):** {enter short summary of note here}\n\n";
+    conversationTemplate+= "**Notes:** {enter note text here} \n\n";
+    return conversationTemplate
 }
 
 
