@@ -356,7 +356,7 @@ function renderEmailConversation(inputEmail)
 	//Filter out undefined and empty values
 	inputEmailTokens = inputEmailTokens.filter(n => n);
 
-	for (int i=0; i<inputEmailTokens.length; i++)
+	for (var i=0; i<inputEmailTokens.length; i++)
 	{
 		if (inputEmailTokens[i] == "From:")
 		{
