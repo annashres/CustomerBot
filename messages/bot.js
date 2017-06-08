@@ -195,7 +195,7 @@ bot.dialog('/firstRun',
             else
             {    
                 var defaultTemplate = getConversationTemplate();
-                var message = `Greetings ${userName},  \n\n`;
+                var message = `Greetings ${userName},\n\n  `;
 
                 message+= `I'm ${botName}. ${description} \n\n`;
                 message+= "`---`\n\n";
@@ -277,7 +277,7 @@ bot.dialog('/selectAction',
             {
                 var dashboardURL = process.env.DashboardUrl;
                 var defaultTemplate = getConversationTemplate();
-                message = `Greetings ${userName},  \n\n`;
+                message = `Greetings ${userName},\n\n  `;
 
                 message+= `I'm guessing you have a new customer conversation for me. If you're looking to see existing conversations, you can [view the conversation dashboard](${dashboardURL}). \n\n`
                 message+= "`---`\n\n";
@@ -430,16 +430,46 @@ bot.dialog('/batchParser',
         if (isEmail(session.message.text))
         {
             // Email parser function goes here
-            var emailAuthors = session.message.text.match(/from: [\w \[:@.\]]+/ig);
-            var authorsList, companyName, companyContacts;
             
-            for (var email=0; email < emailAuthors.length; email++)
+            var emailSenderList = [];
+            var emailSenderRegex = /from: ([\w ]+)\[mailto:(\w+@\w+.com)]/ig;
+            var emailMatches = emailSenderRegex.exec(session.message.text);
+            var msftContacts = "";
+            var companyName = "";
+            var companyContacts = "";
+
+            // Parse out all the email senders into a list
+            while (emailMatches != null)
             {
-                // Parse out email sender
-                var emailSender = emailAuthors[email].split('Sent:')[0];
-                authorsList = authorsList + emailSender.substring(emailSender.search(/from:/ig)+5).trim() + ",";
+                var author = {name: emailMatches[1], email: emailMatches[2]};
+                emailSenderList.push(author);
+                emailMatches = emailSenderRegex.exec(session.message.text)
             }
-            session.conversationData.notes = session.message.text;
+            
+            for (var i=0; i<emailSenderList.length; i++)
+            {
+                var author = emailSenderList[i];
+                
+                //Extract MSFT alias
+                if (author.email.includes("@microsoft.com"))
+                   msftContacts = msftContacts + author.email.split("@microsoft.com")[0] + ","
+                //Extract company name and contact info
+                else
+                {
+                    companyContacts = companyContacts + author.name + ","
+                    companyName = author.email.split("@")[1].replace(".com", "");
+                }
+            }
+            
+            //Strip out any trailing commas
+            msftContacts = msftContacts.replace(/,$/g, "");
+            companyContacts = companyContacts.replace(/,$/g, "");
+
+            //Save extracted information into conversation variables
+            session.conversationData["authors"] = msftContacts;
+            session.conversationData["company"] = companyName;
+            session.conversationData["contact"] = companyContacts;
+            session.conversationData["notes"] = renderEmailConversation(session.message.text);
         }
         // Parse input conversation template
         else

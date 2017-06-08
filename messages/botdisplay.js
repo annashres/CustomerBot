@@ -345,10 +345,17 @@ function renderText(prompt="", inputConversation)
     return outputMessage;
 }
 
+// Renders an email chain into markdown format
+function renderEmailConversation(inputEmail)
+{
+	return inputEmail;
+}
+
 
 module.exports = { 
     renderCard: renderCard,
     renderText: renderText,
     renderSummaryCard: renderSummaryCard,
-    renderEditableCard: renderEditableCard
+    renderEditableCard: renderEditableCard,
+    renderEmailConversation: renderEmailConversation
 };
