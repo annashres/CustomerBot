@@ -1,0 +1,7 @@
+Authors: melgreen, blopez, betpeters
+Company: Wonka Chocolate Factory
+Contact: Willy Wonka
+Product: SQL VM, SQL DB
+Tags: chocolate, column-store
+Summary: Mr. Wonka described the challenges he's facing migrating from SQLVM to SQLDB
+Notes: Mr. Wonka is the eccentric owner of the world-famous Wonka chocolate factory. He employees mystery workers called Oompa-Loompas to operate his chocolate factory. The Oompa-Loompas use SQL VM to crank out batches of chocolate for the millions of customers of Wonka chocolate. Their massive growth has led them to worry about how much time they're spending on maintaining infrastructure instead of making delicious chocolates. They are interested in Azure SQL database but are concerned about the security implications of a public endpoint. The secret chocolate recipe algorithm cannot fall into the wrong hands or it will spell disaster for the company.
