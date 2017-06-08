@@ -266,19 +266,19 @@ bot.dialog('/selectAction',
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
-                var message = `Greetings ${userName},\n\n\n\n`;
+                //var message = `Greetings ${userName},\n\n\n\n`;
 
-                message+= "I see you've sent a previous conversation in the email body. Give me a few minutes to process this information ...";
-                session.send(message);
+                //message+= "I see you've sent a previous conversation in the email body. Give me a few minutes to process this information ...";
+                //session.send(message);
                 session.replaceDialog('/batchParser', session.message.text);
             }
             // Parse conversation template if bot was sent a template as part of greeting
             else if (isValidTemplate(session.message.text))
             {
-                var message = `Greetings ${userName},\n\n\n\n`;
+                //var message = `Greetings ${userName},\n\n\n\n`;
 
-                message+= "I see you've included a few details from your customer conversation in the email body. Give me a few minutes to process this information ...";
-                session.send(message);
+                //message+= "I see you've included a few details from your customer conversation in the email body. Give me a few minutes to process this information ...";
+                //session.send(message);
                 session.replaceDialog('/batchParser', session.message.text);
             }
             else
@@ -287,7 +287,8 @@ bot.dialog('/selectAction',
                 var defaultTemplate = getConversationTemplate();
                 message = `Greetings ${userName}, \n\n`;
 
-                message+= `I'm guessing you have a new customer conversation for me. If you're looking to see the conversations already stored in the archive instead, you can [take a look at the customer conversation dashboard](${dashboardURL}). \n\n`
+                message+= `I'm guessing you have a new customer conversation for me. If you're looking to see existing conversations, you can [view the conversation dashboard](${dashboardURL}). \n\n`
+                message+= "\-\-\-\n\n";
                 message+= "Below you will find the template I need to record your conversation.\n\n"
                 message+= "Reply back with the completed template to continue:\n\n---\n\n";
                 message+= defaultTemplate;
@@ -440,7 +441,8 @@ bot.dialog('/batchParser',
             for (var email=0; email < emailAuthors.length; email++)
             {
                 // Parse out email sender
-                var emailSender = emailAuthors[email].split('Sent:');
+                var emailSender = emailAuthors[email].split('Sent:')[0];
+                authorsList = authorsList + emailSender.substring(emailSender.search(/from:/ig)+5).trim() + ",";
             }
             session.conversationData.notes = session.message.text;
         }
@@ -963,7 +965,7 @@ function templateComplete(inputTemplate)
 //Return default conversationTemplate
 function getConversationTemplate()
 {
-    var conversationTemplate;
+    var conversationTemplate = "";
 
     conversationTemplate+= "**Authors:** {Microsoft alias}, {Microsoft alias} ... \n\n";
     conversationTemplate+= "**Company:** {company name} \n\n";
