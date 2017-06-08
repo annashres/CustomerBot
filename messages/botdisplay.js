@@ -393,8 +393,8 @@ function renderEmailConversation(inputEmail)
 			outputEmail+= ">**Subject:** ";
 
 			var subjectBody = inputEmailTokens[i+1].trim();
-			subjectBody.replace(/\/n/g,'/n>')
-			subjectBody.replace(/\w+@\w+.com>/igm, '');
+			subjectBody = subjectBody.replace(/\/n/g,'/n>')
+			subjectBody = subjectBody.replace(/\w+@\w+.com>/igm, '');
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
