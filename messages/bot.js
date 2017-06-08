@@ -49,7 +49,7 @@ if (process.env.DB_SERVER)
 
     db_connection.sync().then(function()
     {
-        console.log("Created database shema from 'feedback' model");
+        console.log("Created database schema from 'feedback' model");
     });
 }
 
@@ -445,19 +445,26 @@ bot.dialog('/batchParser',
                 emailSenderList.push(author);
                 emailMatches = emailSenderRegex.exec(session.message.text)
             }
-            
+
             for (var i=0; i<emailSenderList.length; i++)
             {
                 var author = emailSenderList[i];
                 
                 //Extract MSFT alias
                 if (author.email.includes("@microsoft.com"))
-                   msftContacts = msftContacts + author.email.split("@microsoft.com")[0] + ","
+                {
+                   var authorAlias = author.email.split("@microsoft.com")[0];
+                   if (!msftContacts.includes(authorAlias))
+                        msftContacts = msftContacts + authorAlias + ","
+                }
                 //Extract company name and contact info
                 else
                 {
-                    companyContacts = companyContacts + author.name + ","
-                    companyName = author.email.split("@")[1].replace(".com", "");
+                    if (!companyContacts.includes(author.name))
+                    {
+                        companyContacts = companyContacts + author.name + ","
+                        companyName = author.email.split("@")[1].replace(".com", "");
+                    }
                 }
             }
             
@@ -469,7 +476,7 @@ bot.dialog('/batchParser',
             session.conversationData["authors"] = msftContacts;
             session.conversationData["company"] = companyName;
             session.conversationData["contact"] = companyContacts;
-            session.conversationData["notes"] = renderEmailConversation(session.message.text);
+            session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
         }
         // Parse input conversation template
         else
