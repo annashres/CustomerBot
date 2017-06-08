@@ -185,9 +185,9 @@ bot.dialog('/firstRun',
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
-                var message = `Greetings ${userName},\n\n`;
+                var message = `Greetings ${userName},  \n\n`;
 
-                message+= `I'm ${botName}. ${description} \n\n\n\n`;
+                message+= `I'm ${botName}. ${description}  \n\n`;
                 message+= "I see you've sent a previous conversation in the email body. Give me a few minutes to process this information ...";
                 session.send(message);
                 session.replaceDialog('/batchParser', session.message.text);
@@ -195,27 +195,17 @@ bot.dialog('/firstRun',
             else
             {    
                 var defaultTemplate = getConversationTemplate();
-                var message = `Greetings ${userName},\n\n\n\n`;
+                var message = `Greetings ${userName},  \n\n`;
 
                 message+= `I'm ${botName}. ${description} \n\n`;
                 message+= "`---`\n\n";
                 message+= "Below you will find the template I need to record your conversation.\n\n"
-                message+= "Reply back with the completed template to continue:\n\n---\n\n";
+                message+= "Reply back with the completed template to continue:\n\n";
+                message+= "`---`\n\n";
                 message+= defaultTemplate;
+                message+= "`---`\n\n";
 
-                message+= "\n\n---\n\n";
-                message+= ">Here's an example completed template:\n\n";
-                message+= ">**Authors:** madhuka, ayolubek, anshrest, vinsonyu \n\n";
-                message+= ">**Company:** Wonka Chocolate Factory \n\n";
-                message+= ">**Contact:** Willy Wonka \n\n";
-                message+= ">**Product:** SQL VM, SQL DB \n\n";
-                message+= ">**Tags:** chocolate, column-store \n\n";
-                message+= ">**Summary:** Mr. Wonka described the challenges he's facing migrating from SQLVM to SQLDB \n\n";
-                message+= `>**Notes:** Mr. Wonka is the eccentric owner of the world-famous Wonka chocolate factory. He employees mystery workers called Oompa-Loompas to operate his chocolate factory. 
-                The Oompa-Loompas use SQL VM to crank out batches of chocolate for the millions of customers of Wonka chocolate. Their massive growth has led them to worry about how much time they're 
-                spending on maintaining infrastructure instead of making delicious chocolates. They are interested in Azure SQL database but are concerned about the security implications of a public endpoint. 
-                The secret chocolate recipe algorithm cannot fall into the wrong hands or it will spell disaster for the company.`
-
+                message+= "*Looking for an example completed template? [You can find one here](https://raw.githubusercontent.com/annashres/CustomerBot/master/ExampleTemplate.txt)*\n\n";
                 builder.Prompts.text(session, message);
             }
         }
@@ -287,14 +277,17 @@ bot.dialog('/selectAction',
             {
                 var dashboardURL = process.env.DashboardUrl;
                 var defaultTemplate = getConversationTemplate();
-                message = `Greetings ${userName}, \n\n`;
+                message = `Greetings ${userName},  \n\n`;
 
                 message+= `I'm guessing you have a new customer conversation for me. If you're looking to see existing conversations, you can [view the conversation dashboard](${dashboardURL}). \n\n`
                 message+= "`---`\n\n";
                 message+= "Below you will find the template I need to record your conversation.\n\n"
-                message+= "Reply back with the completed template to continue:\n\n---\n\n";
+                message+= "Reply back with the completed template to continue:\n\n";
+                message+= "`---`\n\n";
                 message+= defaultTemplate;
-               
+                message+= "`---`\n\n";
+                message+= "*Looking for an example completed template? [You can find one here](https://raw.githubusercontent.com/annashres/CustomerBot/master/ExampleTemplate.txt)*\n\n";
+    
                 builder.Prompts.text(session, message);
             }
         }
