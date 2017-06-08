@@ -348,7 +348,43 @@ function renderText(prompt="", inputConversation)
 // Renders an email chain into markdown format
 function renderEmailConversation(inputEmail)
 {
-	return inputEmail;
+	//Split input text by email tags
+	var emailTokenRegex = /(from:)|(sent:)|(to:)|(subject:)/ig;
+	var inputEmailTokens = inputEmail.split(emailTokenRegex);
+	var outputEmail = "";
+
+	//Filter out undefined and empty values
+	inputEmailTokens = inputEmailTokens.filter(n => n);
+
+	for (int i=0; i<inputEmailTokens.length; i++)
+	{
+		if (inputEmailTokens[i] == "From:")
+		{
+			outputEmail+= ">---\n\n";
+			outputEmail+= ">**From:** ";
+			outputEmail+= inputEmailTokens[i+1].trim();
+			outputEmail+= "\n\n";
+		}
+		else if (inputEmailTokens[i] == "Sent:")
+		{
+			outputEmail+= ">**Sent:** ";
+			outputEmail+= inputEmailTokens[i+1].trim();
+			outputEmail+= "\n\n";
+		}
+		else if (inputEmailTokens[i] == "To:")
+		{
+			outputEmail+= ">**To:** ";
+			outputEmail+= inputEmailTokens[i+1].trim();
+			outputEmail+= "\n\n";
+		}
+		else if (inputEmailTokens[i] == "Subject:")
+		{
+			outputEmail+= ">**Subject:** ";
+			outputEmail+= inputEmailTokens[i+1].trim();
+			outputEmail+= "\n\n";
+		}
+	}
+	return outputEmail;
 }
 
 
