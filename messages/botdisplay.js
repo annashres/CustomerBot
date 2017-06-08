@@ -365,35 +365,36 @@ function renderEmailConversation(inputEmail)
 			else
 			{
 	            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-	            var forwardMessage = inputEmail.substring(0, inputEmail.indexOf('From:'));
+	            var forwardMessage = inputEmail.substring(0, inputEmail.indexOf("From:"));
 
 	            // Trim out email signature from initial forward message
-	            forwardMessage.replace(emailSignatureRegex, '');
-	            outputEmail = outputEmail + ">" + forwardMessage + "---\n\n";
+	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '');
+	            outputEmail = outputEmail + forwardMessage + "---\n\n";
            	}
 			
-			outputEmail+= "**>From:** ";
+			outputEmail+= ">**From:** ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "Sent:")
 		{
-			outputEmail+= "**>Sent:** ";
+			outputEmail+= ">**Sent:** ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "To: ")
 		{
-			outputEmail+= "**>To:** ";
+			outputEmail+= ">**To:** ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "Subject:")
 		{
-			outputEmail+= "**>Subject:** ";
+			outputEmail+= ">**Subject:** ";
 
 			var subjectBody = inputEmailTokens[i+1].trim();
 			subjectBody.replace(/\/n/g,'/n>')
+			subjectBody.replace(/\w+@\w+.com>/igm, '');
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
