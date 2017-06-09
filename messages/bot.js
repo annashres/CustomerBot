@@ -1085,11 +1085,11 @@ function containsKeyword(inputText)
 
 function isValidTemplate(inputText)
 {
-    var hasAuthor = (inputText.search(/author[(s)]*?:/igm) != -1);
-    var hasCompany = (inputText.search(/company:/igm) != -1);
-    var hasContact = (inputText.search(/contact[(s)]*?:/igm) != -1);
-    var hasProduct = (inputText.search(/product[(s)]*?:/igm) != -1);
-    var hasNotes = (inputText.search(/notes?:/igm) != -1);
+    var hasAuthor = (inputText.search(/author[(s)]*\*?:/i) != -1);
+    var hasCompany = (inputText.search(/company\*?:/igm) != -1);
+    var hasContact = (inputText.search(/contact[(s)]*\*?:/i) != -1);
+    var hasProduct = (inputText.search(/product[(s)]*\*?:/i) != -1);
+    var hasNotes = (inputText.search(/notes\*?:/i) != -1);
 
     if (hasAuthor && hasCompany && hasContact && hasProduct && hasNotes)
         return true 
