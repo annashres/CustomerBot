@@ -386,7 +386,8 @@ function renderEmailConversation(inputEmail)
 		{
 			outputEmail+= ">**To:** ";
 
-			var emailMisformatRegex = /<(\w+@\w+.com)>>/gm;
+			var emailMisformatRegex = /(\w+@\w+.com)>/gm;
+			var emailMisformatRegex2 = /<(\w+@\w+.com)>>/gm;
 			var respondents = inputEmailTokens[i+1].trim();
 			var misformattedEmail = emailMisformatRegex.exec(respondents);
 
@@ -404,9 +405,21 @@ function renderEmailConversation(inputEmail)
 		else if (inputEmailTokens[i] == "Subject:")
 		{
 			outputEmail+= ">**Subject:** ";
+			var urlRegex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})/ig
 
 			var subjectBody = inputEmailTokens[i+1];
 			subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
+			
+			var urlLinks = urlRegex.exec(subjectBody);
+
+			while (urlLinks != null)
+			{
+				var destUrl = urlLinks[1];
+				var markdownLink = `[(link)](${destUrl})`;
+				subjectBody = subjectBody.replace(urlLinks[0], markdownLink);
+				urlLinks = urlRegex.exec(subjectBody);
+			}
+
 			outputEmail+= subjectBody;
 			outputEmail+= "\n\n";
 		}
