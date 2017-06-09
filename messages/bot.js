@@ -484,7 +484,7 @@ bot.dialog('/batchParser',
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
         {
             var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-            var conversationTemplateRegex = /(author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
+            var conversationTemplateRegex = /(author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
 
             // Parse email signatures out of input text
             console.log("In email reply template parser");
@@ -504,6 +504,7 @@ bot.dialog('/batchParser',
                             var inputAuthors = templateTokens[token+1];
                             inputAuthors = inputAuthors.replace(/__/g,'');
                             session.conversationData["authors"] = inputAuthors;
+                            console.log('edited author');
                         }
                         else
                         {
@@ -512,6 +513,7 @@ bot.dialog('/batchParser',
                             authorsList = authorsList.replace(/,$/g, '');
                             authorsList = authorsList.replace(/__/g,'');
                             session.conversationData["authors"] = authorsList;
+                            console.log('edited author');
                         }    
                     }
                 }
@@ -523,6 +525,7 @@ bot.dialog('/batchParser',
                         var inputCompany = templateTokens[token+1];
                         inputCompany = inputCompany.replace(/__/g,'');
                         session.conversationData["company"] = inputCompany;
+                        console.log('edited company');
                     }
                 }
                 else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
@@ -533,6 +536,7 @@ bot.dialog('/batchParser',
                         var inputContacts = templateTokens[token+1];
                         inputContacts = inputContacts.replace(/__/g,'');
                         session.conversationData["contact"] = inputContacts;
+                        console.log('edited contact');
                     }
                 }
                 else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
@@ -543,6 +547,7 @@ bot.dialog('/batchParser',
                         var inputProducts = templateTokens[token+1];
                         inputProducts = inputProducts.replace(/__/g,'');
                         session.conversationData["product"] = inputProducts;
+                        console.log('edited product tag');
                     }
                 }
                 else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
@@ -553,13 +558,17 @@ bot.dialog('/batchParser',
                         var inputTags = templateTokens[token+1];
                         inputTags = inputTags.replace(/__/g,'');
                         session.conversationData["tags"] = inputTags;
+                        console.log('edited tags');
                     }
                 }
                 else if (templateTokens[token].search(/notes[*]?:/i) != -1)
                 {
                     // Ignore input if it's default text
                     if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
+                    {
                         session.conversationData["notes"] = templateTokens[token+1];
+                        console.log('edited notes');   
+                    }    
                 }
                 else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
                 {
@@ -569,6 +578,7 @@ bot.dialog('/batchParser',
                         var inputSummary = templateTokens[token+1];
                         inputSummary = inputSummary.replace(/__/g,'');
                         session.conversationData["summary"] = inputSummary;
+                        console.log('edited summary');
                     }
                 }
             }
