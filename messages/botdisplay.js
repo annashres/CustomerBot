@@ -386,14 +386,14 @@ function renderEmailConversation(inputEmail)
 		{
 			outputEmail+= ">**To:** ";
 
-			var emailMisformatRegex = /\w+@\w+.com>/igm;
+			var emailMisformatRegex = /(\w+@\w+.com)>/gm;
 			var respondents = inputEmailTokens[i+1].trim();
 			var misformattedEmail = emailMisformatRegex.exec(respondents);
 
 			// Correct email misformat errors that occurred during initial parsing
 			while (misformattedEmail != null)
 			{
-				respondents = respondents.replace(misformattedEmail[0], '<' + misformattedEmail[0]);
+				respondents = respondents.replace(misformattedEmail[0], '<' + misformattedEmail[1] + '>');
 				misformattedEmail = emailMisformatRegex.exec(respondents);
 			}
 
