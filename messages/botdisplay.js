@@ -392,12 +392,13 @@ function renderEmailConversation(inputEmail)
 			var misformattedEmail = emailMisformatRegex.exec(respondents);
 
 			// Correct email misformat errors that occurred during initial parsing
-			while (misformattedEmail != null)
-			{
-				console.log(misformattedEmail);
-				respondents = respondents.replace(misformattedEmail[0], misformattedEmail[1]);
-				misformattedEmail = emailMisformatRegex.exec(respondents);
-			}
+			respondents = respondents.replace(/mailto:/ig,'');
+			// while (misformattedEmail != null)
+			// {
+			// 	console.log(misformattedEmail);
+			// 	respondents = respondents.replace(misformattedEmail[0], misformattedEmail[1]);
+			// 	misformattedEmail = emailMisformatRegex.exec(respondents);
+			// }
 
 			outputEmail+= respondents;
 			outputEmail+= "\n\n";
