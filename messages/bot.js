@@ -538,7 +538,12 @@ bot.dialog('/batchParser',
                 {
                     // Ignore input if it's default text
                     if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
-                        session.conversationData["notes"] = templateTokens[token+1];
+                    {
+                        if isEmail(templateTokens[token+1])
+                            session.conversationData["notes"] = botdisplay.renderEmailConversation(templateTokens[token+1]);
+                        else
+                            session.conversationData["notes"] = templateTokens[token+1];
+                    }
                 }
                 else if (templateTokens[token].search(/summary:|summary[(optional)]+/i) != -1)
                 {
