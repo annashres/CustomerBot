@@ -385,17 +385,28 @@ function renderEmailConversation(inputEmail)
 		else if (inputEmailTokens[i] == "To: ")
 		{
 			outputEmail+= ">**To:** ";
-			outputEmail+= inputEmailTokens[i+1].trim();
+
+			var emailMisformatRegex = /\w+@\w+.com>/igm;
+			var respondents = inputEmailTokens[i+1].trim();
+			var misformattedEmail = emailMisformatRegex.exec(respondents);
+
+			// Correct email misformat errors that occurred during initial parsing
+			while (misformattedEmail != null)
+			{
+				respondents = respondents.replace(misformattedEmail[0], '<' + misformattedEmail[0]);
+				misformattedEmail = emailMisformatRegex.exec(respondents);
+			}
+
+			outputEmail+= respondents;
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "Subject:")
 		{
 			outputEmail+= ">**Subject:** ";
 
-			var subjectBody = inputEmailTokens[i+1].trim();
-			subjectBody = subjectBody.replace(/\/n/g,'/n>')
-			subjectBody = subjectBody.replace(/\w+@\w+.com>/igm, '');
-			outputEmail+= inputEmailTokens[i+1].trim();
+			var subjectBody = inputEmailTokens[i+1];
+			subjectBody = subjectBody.replace(/\n/g,'\n>');
+			outputEmail+= subjectBody;
 			outputEmail+= "\n\n";
 		}
 	}
