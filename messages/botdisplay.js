@@ -386,22 +386,16 @@ function renderEmailConversation(inputEmail)
 		{
 			outputEmail+= ">**To:** ";
 
-			var emailMisformatRegex = /(\w+@\w+.com)>/gm;
+			var emailMisformatRegex = /<mailto:[<\w:@.]+>/gm;
 			var emailMisformatRegex2 = /<[\w@]+\.\w+[<\w:@.]+>+/gm
 			var respondents = inputEmailTokens[i+1].trim();
 			var misformattedEmail = emailMisformatRegex.exec(respondents);
 
 			// Correct email misformat errors that occurred during initial parsing
-			console.log("Before replace:",respondents.match(emailMisformatRegex2));
-			respondents = respondents.replace(emailMisformatRegex2,'');
-			console.log("After replace:", respondents.match(emailMisformatRegex2));
-			// while (misformattedEmail != null)
-			// {
-			// 	console.log(misformattedEmail);
-			// 	respondents = respondents.replace(misformattedEmail[0], misformattedEmail[1]);
-			// 	misformattedEmail = emailMisformatRegex.exec(respondents);
-			// }
-
+			console.log("Before replace:",respondents.match(emailMisformatRegex));
+			respondents = respondents.replace(emailMisformatRegex,'');
+			console.log("After replace:", respondents.match(emailMisformatRegex));
+			
 			outputEmail+= respondents;
 			outputEmail+= "\n\n";
 		}
@@ -411,7 +405,7 @@ function renderEmailConversation(inputEmail)
 			var urlRegex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})/ig
 
 			var subjectBody = inputEmailTokens[i+1];
-			subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
+			//subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
 			
 			var urlLinks = urlRegex.exec(subjectBody);
 
