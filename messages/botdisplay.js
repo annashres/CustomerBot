@@ -18,19 +18,19 @@ function initializeConversationObject(inputConversation)
 
     // Initialize empty property values
     if (!conversationObject.contact) 
-        conversationObject["contact"]="";
+        conversationObject["contact"]="{customer contact name}";
     if (!conversationObject.product)
-        conversationObject["product"]="";
+        conversationObject["product"]="{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}";
     if (!conversationObject.company)
-        conversationObject["company"]="";
+        conversationObject["company"]="{company name}";
     if (!conversationObject.authors)
-        conversationObject["authors"]="";
+        conversationObject["authors"]="{Microsoft alias}";
     if (!conversationObject.tags)
-        conversationObject["tags"]="";
+        conversationObject["tags"]="{tag}";
     if (!conversationObject.notes) 
-        conversationObject["notes"]="";
+        conversationObject["notes"]="{enter note text here}";
     if (!conversationObject.summary)
-        conversationObject["summary"]="";
+        conversationObject["summary"]="{enter short summary of note here}";
 
     return conversationObject;
 }
@@ -408,7 +408,6 @@ function renderEmailConversation(inputEmail)
 
 			while (urlLinks != null)
 			{
-				console.log(urlLinks);
 				var destUrl = urlLinks[1];
 				var markdownLink = `[(link)](${destUrl})`;
 				subjectBody = subjectBody.replace(urlLinks[0], markdownLink);

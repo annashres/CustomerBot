@@ -265,7 +265,7 @@ bot.dialog('/selectAction',
                 session.replaceDialog('/batchParser', session.message.text);
             }
             // Parse conversation template if bot was sent a template as part of greeting
-            else if (isValidTemplate(session.message.text))
+            else if (containsKeyword(session.message.text))
             {
                 //var message = `Greetings ${userName},\n\n\n\n`;
 
@@ -427,7 +427,7 @@ bot.dialog('/batchParser',
     function(session, args, next)
     {
         // Parse input email chain
-        if (isEmail(session.message.text))
+        if (isEmail(session.message.text) && !isValidTemplate(session.message.text))
         {
             // Email parser function goes here
             
@@ -965,7 +965,7 @@ function isEmail(inputText)
 }
 
 //Check if text is valid conversation template
-function isValidTemplate(inputText)
+function containsKeyword(inputText)
 {
     if (inputText.search(/author[(s)]*?:/i) != -1)
         return true;
@@ -983,6 +983,20 @@ function isValidTemplate(inputText)
         return true;
     else
         return false;
+}
+
+function isValidTemplate(inputText)
+{
+    var hasAuthor = (inputText.search(/author[(s)]*?:/i) != -1);
+    var hasCompany = (inputText.search(/company:/i) != -1);
+    var hasContact = (inputText.search(/contact[(s)]*?:/i) != -1);
+    var hasProduct = (inputText.search(/product[(s)]*?:/i) != -1);
+    var hasNotes = (inputText.search(/notes?:/i) != -1);
+
+    if (hasAuthor && hasCompany && hasContact && hasProduct && hasNotes)
+        return true 
+    else
+        return false
 }
 
 // Check if all required fields in template have been completed
