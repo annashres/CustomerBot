@@ -1053,7 +1053,7 @@ function isEmail(inputText)
 {
     var hasSender = (inputText.search(/from:/i) != -1);
     var hasSendDate = (inputText.search(/sent:/i) != -1);
-    var hasRecipient = (inputText.search(/to:[\s+\w]+<\w+@\w+.com>/i) != -1);
+    var hasRecipient = (inputText.search(/to:[\s+\w]+/i) != -1);
     var hasSubject = (inputText.search(/subject:/i) != -1);
 
     if (hasSender && hasSendDate && hasRecipient && hasSubject)
