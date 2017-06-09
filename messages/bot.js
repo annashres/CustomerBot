@@ -968,7 +968,6 @@ bot.dialog('/displayEditableCard',
 bot.dialog('/editConversation', [
     function (session, args, next)
     {
-        session.send("Updating conversation details...");
         var botChannel = session.message.address.channelId;
 
         if ((!args) && (botChannel == "emulator"))
