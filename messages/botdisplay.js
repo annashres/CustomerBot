@@ -386,7 +386,7 @@ function renderEmailConversation(inputEmail)
 		{
 			outputEmail+= ">**To:** ";
 
-			var emailMisformatRegex = /(\w+@\w+.com)>/gm;
+			var emailMisformatRegex = /<(\w+@\w+.com)>>/gm;
 			var respondents = inputEmailTokens[i+1].trim();
 			var misformattedEmail = emailMisformatRegex.exec(respondents);
 
