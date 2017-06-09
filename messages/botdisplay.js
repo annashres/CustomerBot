@@ -387,12 +387,14 @@ function renderEmailConversation(inputEmail)
 			outputEmail+= ">**To:** ";
 
 			var emailMisformatRegex = /(\w+@\w+.com)>/gm;
-			var emailMisformatRegex2 = /<(\w+@\w+.com)>>/gm;
+			var emailMisformatRegex2 = /<[\w@]+\.\w+[<\w:@.]+>+/gm
 			var respondents = inputEmailTokens[i+1].trim();
 			var misformattedEmail = emailMisformatRegex.exec(respondents);
 
 			// Correct email misformat errors that occurred during initial parsing
-			respondents = respondents.replace(/mailto:/ig,'');
+			console.log("Before replace:",respondents.match(emailMisformatRegex2));
+			respondents = respondents.replace(emailMisformatRegex2,'');
+			console.log("After replace:", respondents.match(emailMisformatRegex2));
 			// while (misformattedEmail != null)
 			// {
 			// 	console.log(misformattedEmail);
