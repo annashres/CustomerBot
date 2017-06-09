@@ -478,6 +478,98 @@ bot.dialog('/batchParser',
             session.conversationData["contact"] = companyContacts;
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
         }
+        // Parse response to email conversation template
+        else if (isEmail(session.message.text) && isValidTemplate(session.message.text))
+        {
+            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
+            var conversationTemplateRegex = /(author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
+
+            // Parse email signatures out of input text
+            var templateTokens = session.message.text.replace(emailSignatureRegex, '');
+            templateTokens.spli(conversationTemplateRegex);
+
+            for (var token=0; token<templateTokens.length; token++)
+            {
+                if (templateTokens[token].search(/author[(s)*]*?:/i) != -1)
+                {
+                    // Ignore input if it's default text, include otherwise
+                    if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
+                    {
+                        if (templateTokens[token+1].includes(session.userData.alias))
+                        {
+                            var inputAuthors = templateTokens[token+1];
+                            inputAuthors = inputAuthors.replace(/__/g,'');
+                            session.conversationData["authors"] = inputAuthors;
+                        }
+                        else
+                        {
+                            // Include author alias if it is not included in authors list
+                            var authorsList = session.userData.alias + "," + templateTokens[token+1];
+                            authorsList = authorsList.replace(/,$/g, '');
+                            authorsList = authorsList.replace(/__/g,'');
+                            session.conversationData["authors"] = authorsList;
+                        }    
+                    }
+                }
+                else if (templateTokens[token].search(/company[*]?:/i) != -1)
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{company name}/i) == -1)
+                    {
+                        var inputCompany = templateTokens[token+1];
+                        inputCompany = inputCompany.replace(/__/g,'');
+                        session.conversationData["company"] = inputCompany;
+                    }
+                }
+                else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{customer contact name}/i) == -1)
+                    {
+                        var inputContacts = templateTokens[token+1];
+                        inputContacts = inputContacts.replace(/__/g,'');
+                        session.conversationData["contact"] = inputContacts;
+                    }
+                }
+                else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/i) == -1)
+                    {
+                        var inputProducts = templateTokens[token+1];
+                        inputProducts = inputProducts.replace(/__/g,'');
+                        session.conversationData["product"] = inputProducts;
+                    }
+                }
+                else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{tag}/i) == -1)
+                    {
+                        var inputTags = templateTokens[token+1];
+                        inputTags = inputTags.replace(/__/g,'');
+                        session.conversationData["tags"] = inputTags;
+                    }
+                }
+                else if (templateTokens[token].search(/notes[*]?:/i) != -1)
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
+                        session.conversationData["notes"] = templateTokens[token+1];
+                }
+                else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
+                {
+                    // Ignore input if it's default text
+                    if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
+                    {
+                        var inputSummary = templateTokens[token+1];
+                        inputSummary = inputSummary.replace(/__/g,'');
+                        session.conversationData["summary"] = inputSummary;
+                    }
+                }
+            }
+
+        }
         // Parse input conversation template
         else
         {
@@ -487,6 +579,7 @@ bot.dialog('/batchParser',
 
             // Parse email signatures out of input text
             var templateTokens = args.replace(emailSignatureRegex, '');
+        
             // Parse lines out of input text
             templateTokens = templateTokens.replace(/__/g,'');
                    
@@ -538,14 +631,9 @@ bot.dialog('/batchParser',
                 {
                     // Ignore input if it's default text
                     if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
-                    {
-                        if (isEmail(templateTokens[token+1]))
-                            session.conversationData["notes"] = botdisplay.renderEmailConversation(templateTokens[token+1]);
-                        else
-                            session.conversationData["notes"] = templateTokens[token+1];
-                    }
+                        session.conversationData["notes"] = templateTokens[token+1];
                 }
-                else if (templateTokens[token].search(/summary:|summary[(optional)]+/i) != -1)
+                else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
                 {
                     // Ignore input if it's default text
                     if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
