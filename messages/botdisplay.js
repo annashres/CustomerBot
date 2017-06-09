@@ -408,7 +408,7 @@ function renderEmailConversation(inputEmail)
 
 			while (urlLinks != null)
 			{
-				console.log(urlLinks[0]);
+				console.log(urlLinks);
 				var destUrl = urlLinks[1];
 				var markdownLink = `[(link)](${destUrl})`;
 				subjectBody = subjectBody.replace(urlLinks[0], markdownLink);
