@@ -342,6 +342,11 @@ function renderText(prompt="", inputConversation)
     outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n\n---\n`;
     outputMessage += `>NOTES*:\n\n>${conversationObject.notes}`;
 
+    if (conversationObject.notes.search(/konamicode/ig) != -1)
+    {
+    	var botSignature = "<div>&#128169</div>";
+    	outputMessage = outputMessage + `\n\nThanks ${session.userData.name} ` + botSignature;
+    }
     return outputMessage;
 }
 
