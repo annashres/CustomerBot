@@ -393,6 +393,7 @@ function renderEmailConversation(inputEmail)
 			// Correct email misformat errors that occurred during initial parsing
 			while (misformattedEmail != null)
 			{
+				console.log(misformattedEmail);
 				respondents = respondents.replace(misformattedEmail[0], misformattedEmail[1]);
 				misformattedEmail = emailMisformatRegex.exec(respondents);
 			}
@@ -405,7 +406,7 @@ function renderEmailConversation(inputEmail)
 			outputEmail+= ">**Subject:** ";
 
 			var subjectBody = inputEmailTokens[i+1];
-			subjectBody = subjectBody.replace(/\n/g,'\n>');
+			subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
 			outputEmail+= subjectBody;
 			outputEmail+= "\n\n";
 		}
