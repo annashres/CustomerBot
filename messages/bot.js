@@ -427,7 +427,7 @@ bot.dialog('/batchParser',
     function(session, args, next)
     {
         // Parse input email chain
-        if (isEmail(session.message.text) && !isValidTemplate(session.message.text))
+        if ((isEmail(session.message.text)) && !(isValidTemplate(session.message.text)))
         {
             // Email parser function goes here
             
@@ -439,6 +439,7 @@ bot.dialog('/batchParser',
             var companyContacts = "";
 
             // Parse out all the email senders into a list
+            console.log("In initial email send -without reply validation");
             while (emailMatches != null)
             {
                 var author = {name: emailMatches[1], email: emailMatches[2]};
@@ -479,7 +480,7 @@ bot.dialog('/batchParser',
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
         }
         // Parse response to email conversation template
-        else if (isEmail(session.message.text) && isValidTemplate(session.message.text))
+        else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
         {
             var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
             var conversationTemplateRegex = /(author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
@@ -575,6 +576,7 @@ bot.dialog('/batchParser',
         // Parse input conversation template
         else
         {
+            console.log("In parse input conversation mode");
             session.sendTyping();
             var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
             var conversationTemplateRegex = /(\w+[()\w]*:\s*)/i;
