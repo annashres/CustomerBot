@@ -489,7 +489,7 @@ bot.dialog('/batchParser',
             // Parse email signatures out of input text
             console.log("In email reply template parser");
             var templateTokens = session.message.text.replace(emailSignatureRegex, '');
-            templateTokens.split(conversationTemplateRegex);
+            templateTokens = templateTokens.split(conversationTemplateRegex);
             console.log(templateTokens);
 
             for (var token=0; token<templateTokens.length; token++)
