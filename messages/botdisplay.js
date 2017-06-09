@@ -393,7 +393,8 @@ function renderEmailConversation(inputEmail)
 			// Correct email misformat errors that occurred during initial parsing
 			while (misformattedEmail != null)
 			{
-				respondents = respondents.replace(misformattedEmail[0], '<' + misformattedEmail[1] + '>');
+				respondents.replace(misformattedEmail[0], '');
+				//respondents = respondents.replace(misformattedEmail[0], '<' + misformattedEmail[1] + '>');
 				misformattedEmail = emailMisformatRegex.exec(respondents);
 			}
 
