@@ -418,7 +418,11 @@ function renderEmailConversation(inputEmail)
 				var destUrl = urlLinks[1];
 				var markdownLink = `[(link)](${destUrl})`;
 				var existingLinkText = '(link)'+urlLinks[0];
-				subjectBody = subjectBody.replace(existingLinkText, markdownLink);
+
+				if (subjectBody.includes(existingLinkText))
+					subjectBody = subjectBody.replace(existingLinkText, markdownLink);
+				else
+					subjectBody = subjectBody.replace(urlLinks[0], markdownLink);
 				urlLinks = urlRegex.exec(subjectBody);
 			}
 
