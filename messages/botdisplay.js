@@ -353,9 +353,12 @@ function renderText(prompt="", inputConversation)
 // Renders an email chain into markdown format
 function renderEmailConversation(inputEmail)
 {
+	//Remove line delimiters from input
+	var inputEmailTokens = inputEmail.replace(/[__]+/g,'');
+
 	//Split input text by email tags
 	var emailTokenRegex = /(from:)|(sent:)|(to: )|(subject:)/ig;
-	var inputEmailTokens = inputEmail.split(emailTokenRegex);
+	inputEmailTokens = inputEmailTokens.split(emailTokenRegex);
 	var outputEmail = "";
 
 	//Filter out undefined and empty values
@@ -366,7 +369,7 @@ function renderEmailConversation(inputEmail)
 		if (inputEmailTokens[i] == "From:")
 		{
 			if (outputEmail.length)
-				outputEmail+= "\n\n`*----`\n\n";
+				outputEmail+= "\n\n`----`\n\n";
 			else
 			{
 	            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
@@ -374,7 +377,7 @@ function renderEmailConversation(inputEmail)
 
 	            // Trim out email signature from initial forward message
 	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '');
-	            outputEmail = outputEmail + forwardMessage + "\n\n`*----`\n\n";
+	            outputEmail = outputEmail + forwardMessage + "\n\n`----`\n\n";
            	}
 			
 			outputEmail+= "From: ";
@@ -383,9 +386,7 @@ function renderEmailConversation(inputEmail)
 		}
 		else if (inputEmailTokens[i] == "Sent:")
 		{
-			// outputEmail+= "Sent: ";
-			// outputEmail+= inputEmailTokens[i+1].trim();
-			// outputEmail+= "\n\n";
+			//Discard this information (needed to deal with Outlook default formatting for emails)
 		}
 		else if (inputEmailTokens[i] == "To: ")
 		{

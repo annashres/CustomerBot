@@ -565,8 +565,7 @@ bot.dialog('/batchParser',
                     // Ignore input if it's default text
                     if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
                     {
-                        var inputNotes = templateTokens[token+1];
-                        inputNotes = inputNotes.replace(/^[\r\n]+/g,'');
+                        var inputNotes = botdisplay.renderEmailConversation(templateTokens[token+1]);
                         session.conversationData["notes"] = inputNotes;
                     }    
                 }
