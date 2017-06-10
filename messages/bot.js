@@ -469,6 +469,10 @@ bot.dialog('/batchParser',
                     }
                 }
             }
+
+            // Append user's alias if it's not included in list of authors
+            if (!msftContacts.includes(session.userData.alias))
+                msftContacts = session.userData.alias + ", " + msftContacts;
             
             //Strip out any trailing commas
             msftContacts = msftContacts.replace(/,$/g, "");
@@ -508,7 +512,7 @@ bot.dialog('/batchParser',
                         else
                         {
                             // Include author alias if it is not included in authors list
-                            var authorsList = session.userData.alias + "," + templateTokens[token+1];
+                            var authorsList = session.userData.alias + ", " + templateTokens[token+1];
                             authorsList = authorsList.replace(/,$/g, '');
                             authorsList = authorsList.replace(/[__\r\n]+/g,'');
                             session.conversationData["authors"] = authorsList;
