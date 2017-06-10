@@ -502,18 +502,16 @@ bot.dialog('/batchParser',
                         if (templateTokens[token+1].includes(session.userData.alias))
                         {
                             var inputAuthors = templateTokens[token+1];
-                            inputAuthors = inputAuthors.replace(/__/g,'');
+                            inputAuthors = inputAuthors.replace(/[__\r\n]+/g,'');
                             session.conversationData["authors"] = inputAuthors;
-                            console.log('edited author');
                         }
                         else
                         {
                             // Include author alias if it is not included in authors list
                             var authorsList = session.userData.alias + "," + templateTokens[token+1];
                             authorsList = authorsList.replace(/,$/g, '');
-                            authorsList = authorsList.replace(/__/g,'');
+                            authorsList = authorsList.replace(/[__\r\n]+/g,'');
                             session.conversationData["authors"] = authorsList;
-                            console.log('edited author');
                         }    
                     }
                 }
@@ -523,9 +521,8 @@ bot.dialog('/batchParser',
                     if (templateTokens[token+1].search(/{company name}/i) == -1)
                     {
                         var inputCompany = templateTokens[token+1];
-                        inputCompany = inputCompany.replace(/__/g,'');
+                        inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
                         session.conversationData["company"] = inputCompany;
-                        console.log('edited company');
                     }
                 }
                 else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
@@ -534,9 +531,8 @@ bot.dialog('/batchParser',
                     if (templateTokens[token+1].search(/{customer contact name}/i) == -1)
                     {
                         var inputContacts = templateTokens[token+1];
-                        inputContacts = inputContacts.replace(/__/g,'');
+                        inputContacts = inputContacts.replace(/[__\r\n]+/g,'');
                         session.conversationData["contact"] = inputContacts;
-                        console.log('edited contact');
                     }
                 }
                 else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
@@ -545,9 +541,8 @@ bot.dialog('/batchParser',
                     if (templateTokens[token+1].search(/{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/i) == -1)
                     {
                         var inputProducts = templateTokens[token+1];
-                        inputProducts = inputProducts.replace(/__/g,'');
+                        inputProducts = inputProducts.replace(/[__\r\n]+/g,'');
                         session.conversationData["product"] = inputProducts;
-                        console.log('edited product tag');
                     }
                 }
                 else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
@@ -556,9 +551,8 @@ bot.dialog('/batchParser',
                     if (templateTokens[token+1].search(/{tag}/i) == -1)
                     {
                         var inputTags = templateTokens[token+1];
-                        inputTags = inputTags.replace(/__/g,'');
+                        inputTags = inputTags.replace(/[__\r\n]+/g,'');
                         session.conversationData["tags"] = inputTags;
-                        console.log('edited tags');
                     }
                 }
                 else if (templateTokens[token].search(/notes[*]?:/i) != -1)
@@ -566,8 +560,9 @@ bot.dialog('/batchParser',
                     // Ignore input if it's default text
                     if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
                     {
-                        session.conversationData["notes"] = templateTokens[token+1];
-                        console.log('edited notes');   
+                        var inputNotes = templateTokens[token+1];
+                        inputNotes = inputNotes.replace(/^[\r\n]+/g,'');
+                        session.conversationData["notes"] = inputNotes;
                     }    
                 }
                 else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
@@ -576,9 +571,8 @@ bot.dialog('/batchParser',
                     if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
                     {
                         var inputSummary = templateTokens[token+1];
-                        inputSummary = inputSummary.replace(/__/g,'');
+                        inputSummary = inputSummary.replace(/[__\r\n]+/g,'');
                         session.conversationData["summary"] = inputSummary;
-                        console.log('edited summary');
                     }
                 }
             }
