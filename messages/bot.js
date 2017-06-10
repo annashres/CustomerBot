@@ -427,7 +427,7 @@ bot.dialog('/batchParser',
     function(session, args, next)
     {
         console.log("input:", args);
-        console.log("channelstuff:", session.message.address);
+        
         // Parse input email chain
         if ((isEmail(session.message.text)) && !(isValidTemplate(session.message.text)))
         {

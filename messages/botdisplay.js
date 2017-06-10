@@ -334,7 +334,7 @@ function renderText(prompt="", inputConversation)
     var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
     companyName = companyName.trim();
     outputMessage += `**Conversation with ${companyName}**\n\n`;
-    outputMessage += `\n\nCOMPANY*:\n\n${conversationObject.company}\n\n---\n`;
+    outputMessage += `COMPANY*:\n\n${conversationObject.company}\n\n---\n`;
     outputMessage += `AUTHOR(S)*:\n\n${conversationObject.authors}\n\n---\n`;
     outputMessage += `CUSTOMER CONTACT(S)*:\n\n${conversationObject.contact}\n\n---\n`;
     outputMessage += `PRODUCT(S)*:\n\n${conversationObject.product}\n\n---\n`;
@@ -366,7 +366,7 @@ function renderEmailConversation(inputEmail)
 		if (inputEmailTokens[i] == "From:")
 		{
 			if (outputEmail.length)
-				outputEmail+= "\n\n---\n\n";
+				outputEmail+= "\n\n`---`\n\n";
 			else
 			{
 	            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
@@ -377,19 +377,19 @@ function renderEmailConversation(inputEmail)
 	            outputEmail = outputEmail + forwardMessage + "\n\n---\n\n";
            	}
 			
-			outputEmail+= "**From:** ";
+			outputEmail+= "From: ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "Sent:")
 		{
-			outputEmail+= "**Sent:** ";
+			outputEmail+= "Sent: ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "To: ")
 		{
-			outputEmail+= "**To:** ";
+			outputEmail+= "To: ";
 
 			var emailMisformatRegex = /<mailto:[<\w:@.]+>/gm;
 			var respondents = inputEmailTokens[i+1].trim();
@@ -403,7 +403,7 @@ function renderEmailConversation(inputEmail)
 		}
 		else if (inputEmailTokens[i] == "Subject:")
 		{
-			outputEmail+= "**Subject:** ";
+			outputEmail+= "Subject: ";
 			var urlRegex = /<(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})>/ig
 
 			var subjectBody = inputEmailTokens[i+1];
@@ -423,7 +423,6 @@ function renderEmailConversation(inputEmail)
 			outputEmail+= "\n\n";
 		}
 	}
-	outputEmail += "";
 	return outputEmail;
 }
 
