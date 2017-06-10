@@ -356,7 +356,7 @@ function renderEmailConversation(inputEmail)
 	//Split input text by email tags
 	var emailTokenRegex = /(from:)|(sent:)|(to: )|(subject:)/ig;
 	var inputEmailTokens = inputEmail.split(emailTokenRegex);
-	var outputEmail = "`";
+	var outputEmail = "```";
 
 	//Filter out undefined and empty values
 	inputEmailTokens = inputEmailTokens.filter(n => n);
@@ -423,7 +423,7 @@ function renderEmailConversation(inputEmail)
 			outputEmail+= "\n\n";
 		}
 	}
-	outputEmail += "`";
+	outputEmail += "```";
 	return outputEmail;
 }
 
