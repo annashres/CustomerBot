@@ -333,14 +333,14 @@ function renderText(prompt="", inputConversation)
     // Conversation details
     var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
     companyName = companyName.trim();
-    outputMessage += `**Conversation with ${companyName}**\n\n`;
-    outputMessage += `>COMPANY*:\n\n>${conversationObject.company}\n\n---\n`;
-    outputMessage += `>AUTHOR(S)*:\n\n>${conversationObject.authors}\n\n---\n`;
-    outputMessage += `>CUSTOMER CONTACT(S)*:\n\n>${conversationObject.contact}\n\n---\n`;
-    outputMessage += `>PRODUCT(S)*:\n\n>${conversationObject.product}\n\n---\n`;
-    outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n\n---\n`;
-    outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n\n---\n`;
-    outputMessage += `>NOTES*:\n\n>${conversationObject.notes}`;
+    outputMessage += `##Conversation with ${companyName}**\n\n`;
+    outputMessage += `>COMPANY*: ${conversationObject.company}\n\n---\n`;
+    outputMessage += `>AUTHOR(S)*: ${conversationObject.authors}\n\n---\n`;
+    outputMessage += `>CUSTOMER CONTACT(S)*: ${conversationObject.contact}\n\n---\n`;
+    outputMessage += `>PRODUCT(S)*: ${conversationObject.product}\n\n---\n`;
+    outputMessage += `>TAGS: ${conversationObject.tags}\n\n---\n`;
+    outputMessage += `>SUMMARY: ${conversationObject.summary}\n\n---\n`;
+    outputMessage += `>NOTES*: ${conversationObject.notes}`;
 
     if (conversationObject.notes.search(/konamicode/ig) != -1)
     {
@@ -407,7 +407,7 @@ function renderEmailConversation(inputEmail)
 			var urlRegex = /<(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})>/ig
 
 			var subjectBody = inputEmailTokens[i+1];
-			subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
+			//subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
 			
 			var urlLinks = urlRegex.exec(subjectBody);
 
