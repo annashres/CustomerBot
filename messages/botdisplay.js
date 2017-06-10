@@ -354,7 +354,8 @@ function renderText(prompt="", inputConversation)
 function renderEmailConversation(inputEmail)
 {
 	//Remove line delimiters from input
-	var inputEmailTokens = inputEmail.replace(/[__]+/g,'');
+	var inputEmailTokens = inputEmail.replace(/__/g,'');
+	inputEmailTokens = inputEmailTokens.replace(/----/g,'');
 
 	//Split input text by email tags
 	var emailTokenRegex = /(from:)|(sent:)|(to: )|(subject:)/ig;
@@ -416,7 +417,8 @@ function renderEmailConversation(inputEmail)
 			{
 				var destUrl = urlLinks[1];
 				var markdownLink = `[(link)](${destUrl})`;
-				subjectBody = subjectBody.replace(urlLinks[0], markdownLink);
+				var existingLinkText = '(link)'+urlLinks[0];
+				subjectBody = subjectBody.replace(existingLinkText, markdownLink);
 				urlLinks = urlRegex.exec(subjectBody);
 			}
 
