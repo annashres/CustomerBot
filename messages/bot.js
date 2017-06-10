@@ -876,7 +876,7 @@ bot.dialog('/displayMarkdownConversationCard',
             prompt = `Below you will find the details of your conversation.\n\n`;
             prompt += "Please complete all required sections in the template to continue. You will find some fields have been populated with hints for acceptable values.\n\n";
             prompt += "`---`\n\n";   
-            prompt += "Required sections are marked with an asterisk('*').\n\n" 
+            prompt += "Required sections are **marked with an asterisk('*')**.\n\n" 
             prompt += "Reply with **Discard** to discard the conversation.\n\n";
             prompt += "**Edit the required details below** and reply back to continue.\n\n";
             prompt += "`---`\n\n"; 
