@@ -868,17 +868,17 @@ bot.dialog('/displayMarkdownConversationCard',
             prompt += "`---`\n\n";
             prompt += "Reply with **Confirm** to accept the conversation details below.\n\n";
             prompt += "Reply with **Discard** to discard the conversation.\n\n";
-            prompt += "**Edit the details below** and reply if you would like to change any conversation detail below.\n\n\n\n";
+            prompt += "**Edit the details below** and reply if you would like to change any conversation detail below.\n\n";
             prompt += "`---`\n\n"; 
         }
         else
         {
-            prompt = `Below you will find the details of your conversation. Some fields have been populated with default values\n\n`;
-            prompt += "Please complete all required sections in the template to continue.\n\n";
+            prompt = `Below you will find the details of your conversation.\n\n`;
+            prompt += "Please complete all required sections in the template to continue. You will find some fields have been populated with hints for acceptable values.\n\n";
             prompt += "`---`\n\n";   
-            prompt += "Required sections are marked with an asterisk(\*).\n" 
-            prompt += "Reply with **Discard** to discard the conversation.\n";
-            prompt += "**Edit the required details below** and reply back to continue.\n\n\n\n";
+            prompt += "Required sections are marked with an asterisk('*').\n\n" 
+            prompt += "Reply with **Discard** to discard the conversation.\n\n";
+            prompt += "**Edit the required details below** and reply back to continue.\n\n";
             prompt += "`---`\n\n"; 
         }
 

@@ -356,7 +356,7 @@ function renderEmailConversation(inputEmail)
 	//Split input text by email tags
 	var emailTokenRegex = /(from:)|(sent:)|(to: )|(subject:)/ig;
 	var inputEmailTokens = inputEmail.split(emailTokenRegex);
-	var outputEmail = "```";
+	var outputEmail = "";
 
 	//Filter out undefined and empty values
 	inputEmailTokens = inputEmailTokens.filter(n => n);
@@ -377,19 +377,19 @@ function renderEmailConversation(inputEmail)
 	            outputEmail = outputEmail + forwardMessage + "\n\n---\n\n";
            	}
 			
-			outputEmail+= ">**From:** ";
+			outputEmail+= "**From:** ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "Sent:")
 		{
-			outputEmail+= ">**Sent:** ";
+			outputEmail+= "**Sent:** ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
 		}
 		else if (inputEmailTokens[i] == "To: ")
 		{
-			outputEmail+= ">**To:** ";
+			outputEmail+= "**To:** ";
 
 			var emailMisformatRegex = /<mailto:[<\w:@.]+>/gm;
 			var respondents = inputEmailTokens[i+1].trim();
@@ -403,11 +403,11 @@ function renderEmailConversation(inputEmail)
 		}
 		else if (inputEmailTokens[i] == "Subject:")
 		{
-			outputEmail+= ">**Subject:** ";
+			outputEmail+= "**Subject:** ";
 			var urlRegex = /<(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})>/ig
 
 			var subjectBody = inputEmailTokens[i+1];
-			subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
+			//subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
 			
 			var urlLinks = urlRegex.exec(subjectBody);
 
@@ -423,7 +423,7 @@ function renderEmailConversation(inputEmail)
 			outputEmail+= "\n\n";
 		}
 	}
-	outputEmail += "```";
+	outputEmail += "";
 	return outputEmail;
 }
 
