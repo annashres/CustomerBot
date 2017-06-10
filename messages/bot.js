@@ -427,7 +427,7 @@ bot.dialog('/batchParser',
     function(session, args, next)
     {
         console.log("input:", args);
-        console.log("channelstuff:" session.message.address);
+        console.log("channelstuff:", session.message.address);
         // Parse input email chain
         if ((isEmail(session.message.text)) && !(isValidTemplate(session.message.text)))
         {
@@ -499,7 +499,7 @@ bot.dialog('/batchParser',
 
             for (var token=0; token<templateTokens.length; token++)
             {
-                if (templateTokens[token].search(/author[(s)*]*?:/i) != -1)
+                if (templateTokens[token].search(/author\(s\)[*]*?:/i) != -1)
                 {
                     // Ignore input if it's default text, include otherwise
                     if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
