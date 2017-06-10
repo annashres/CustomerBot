@@ -425,6 +425,7 @@ function renderEmailConversation(inputEmail)
 					subjectBody = subjectBody.replace(urlLinks[0], markdownLink);
 				urlLinks = urlRegex.exec(subjectBody);
 			}
+			subjectBody = subjectBody.replace(/\r\n/g,'\r\n\r\n');
 
 			outputEmail+= subjectBody;
 			outputEmail+= "\n\n";
