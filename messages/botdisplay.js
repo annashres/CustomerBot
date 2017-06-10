@@ -334,13 +334,13 @@ function renderText(prompt="", inputConversation)
     var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
     companyName = companyName.trim();
     outputMessage += `**Conversation with ${companyName}**\n\n`;
-    outputMessage += `>COMPANY*:\n\n>${conversationObject.company}\n\n---\n`;
-    outputMessage += `>AUTHOR(S)*:\n\n>${conversationObject.authors}\n\n---\n`;
-    outputMessage += `>CUSTOMER CONTACT(S)*:\n\n>${conversationObject.contact}\n\n---\n`;
-    outputMessage += `>PRODUCT(S)*:\n\n>${conversationObject.product}\n\n---\n`;
-    outputMessage += `>TAGS:\n\n>${conversationObject.tags}\n\n---\n`;
-    outputMessage += `>SUMMARY:\n\n>${conversationObject.summary}\n\n---\n`;
-    outputMessage += `>NOTES*:\n\n>${conversationObject.notes}`;
+    outputMessage += `COMPANY*:\n\n${conversationObject.company}\n\n---\n`;
+    outputMessage += `AUTHOR(S)*:\n\n${conversationObject.authors}\n\n---\n`;
+    outputMessage += `CUSTOMER CONTACT(S)*:\n\n${conversationObject.contact}\n\n---\n`;
+    outputMessage += `PRODUCT(S)*:\n\n${conversationObject.product}\n\n---\n`;
+    outputMessage += `TAGS:\n\n${conversationObject.tags}\n\n---\n`;
+    outputMessage += `SUMMARY:\n\n${conversationObject.summary}\n\n---\n`;
+    outputMessage += `NOTES*:\n\n${conversationObject.notes}`;
 
     if (conversationObject.notes.search(/konamicode/ig) != -1)
     {
