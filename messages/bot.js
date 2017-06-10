@@ -489,7 +489,7 @@ bot.dialog('/batchParser',
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
         {
             var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-            var conversationTemplateRegex = /(author(s)[*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
+            var conversationTemplateRegex = /(author\(s\)[*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
 
             // Parse email signatures out of input text
             console.log("In email reply template parser");
