@@ -377,8 +377,8 @@ function renderEmailConversation(inputEmail)
 	            var forwardMessage = inputEmail.substring(0, inputEmail.indexOf("From:"));
 
 	            // Trim out email signature from initial forward message
-	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '');
-	            outputEmail = outputEmail + forwardMessage + "\n\n`----`\n\n";
+	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '').trim();
+	            outputEmail = forwardMessage + "\n\n`----`\n\n";
            	}
 			
 			outputEmail+= "From: ";
@@ -409,8 +409,8 @@ function renderEmailConversation(inputEmail)
 			var urlRegex = /<(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})>/ig
 
 			var subjectBody = inputEmailTokens[i+1];
-			//subjectBody = subjectBody.replace(/\n|\n\n/g,'\n>');
-			
+			console.log('Subject body:', subjectBody);
+		
 			var urlLinks = urlRegex.exec(subjectBody);
 
 			while (urlLinks != null)

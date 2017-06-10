@@ -426,8 +426,6 @@ bot.dialog('/batchParser',
 [
     function(session, args, next)
     {
-        console.log("input:", args);
-       
         // Parse input email chain
         if ((isEmail(session.message.text)) && !(isValidTemplate(session.message.text)))
         {
@@ -441,7 +439,6 @@ bot.dialog('/batchParser',
             var companyContacts = "";
 
             // Parse out all the email senders into a list
-            console.log("In initial email send -without reply validation");
             while (emailMatches != null)
             {
                 var author = {name: emailMatches[1], email: emailMatches[2]};
@@ -492,7 +489,6 @@ bot.dialog('/batchParser',
             var conversationTemplateRegex = /(author\(s\)[*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
 
             // Parse email signatures out of input text
-            console.log("In email reply template parser");
             var templateTokens = session.message.text.replace(emailSignatureRegex, '');
             templateTokens = templateTokens.split(conversationTemplateRegex);
             console.log(templateTokens);
@@ -585,7 +581,6 @@ bot.dialog('/batchParser',
         // Parse input conversation template
         else
         {
-            console.log("In parse input conversation mode");
             session.sendTyping();
             var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
             var conversationTemplateRegex = /(\w+[()\w]*:\s*)/i;
