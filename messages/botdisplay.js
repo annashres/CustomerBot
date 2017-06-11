@@ -355,7 +355,7 @@ function renderEmailConversation(inputEmail)
 {
 	//Remove line delimiters from input
 	var inputEmailTokens = inputEmail.replace(/__/g,'');
-	inputEmailTokens = inputEmailTokens.replace(/----|:-+/g,'');
+	inputEmailTokens = inputEmailTokens.replace(/----/g,'');
 
 	//Split input text by email tags
 	var emailTokenRegex = /(from:)|(sent:)|(to: )|(subject:)/ig;
@@ -375,10 +375,11 @@ function renderEmailConversation(inputEmail)
 			{
 	            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
 	            var forwardMessage = inputEmail.substring(0, inputEmail.indexOf("From:"));
+	            forwardMessage = forwardMessage.replace(/----/g,'');
 
 	            // Trim out email signature from initial forward message
 	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '');
-	            outputEmail = forwardMessage + "\n\n`:----`\n\n";;
+	            outputEmail = forwardMessage + "\n\n`----`\n\n";;
            	}
 			
 			outputEmail+= "From: ";
