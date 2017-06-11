@@ -24,6 +24,7 @@ else
     var listener = bot.connector.listen();
     var withLogging = function(context, req) {
         console.log = context.log;
+        console.error = context.error;
         listener(context, req);
     }
 
