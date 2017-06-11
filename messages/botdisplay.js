@@ -26,11 +26,15 @@ function initializeConversationObject(inputConversation)
     if (!conversationObject.authors)
         conversationObject["authors"]="{Microsoft alias}";
     if (!conversationObject.tags)
-        conversationObject["tags"]="{tag}";
+        conversationObject["tags"]="{tag}, {tag} ...";
     if (!conversationObject.notes) 
         conversationObject["notes"]="{enter note text here}";
     if (!conversationObject.summary)
         conversationObject["summary"]="{enter short summary of note here}";
+    if (!conversationObject.projectstage)
+    	conversationObject["projectstage"]="{Select one of: Pre-POC, POC, Production}";
+    if (!conversationObject.blockers)
+    	conversationObject["blockers"]="{blocker}, {blocker} ..."
 
     return conversationObject;
 }
@@ -85,11 +89,23 @@ function renderCard(session, builder, inputConversation, inputActions=null)
                     "wrap": "true"
                 },
                 {
+                	"type": "TextBlock",
+                	"text": `Project stage:\n\n ${conversationObject.projectstage}`,
+                	"separation": "strong",
+                	"wrap": "true"
+                },
+                {
+                	"type": "TextBlock",
+                	"text": `Blocker(s):\n\n ${conversationObject.blockers}`,
+                	"separation": "strong",
+                	"wrap": "true"
+                },
+                {
                     "type": "TextBlock",
                     "text": `Tags:\n\n ${conversationObject.tags}`,
                     "separation": "strong",
                     "wrap": "true"
-                },
+                },         
                 {
                     "type": "TextBlock",
                     "text": `Summary:\n\n ${conversationObject.summary}`,
@@ -128,6 +144,9 @@ function renderEditableCard(session, builder, inputConversation)
     var poolSelected = (conversationObject.product.match(/pool/i) != null);
     var onPremSelected = (conversationObject.product.match(/on-prem/i) != null);
     var otherSelected = (conversationObject.product.match(/other/i) != null);
+    var prePOCSelected = (conversationObject.projectstage.match(/pre-poc/i) != null);
+    var POCSelected = (conversationObject.projectstage.match(/poc/i) != null);
+    var productionSelected = (conversationObject.projectstage.match(/production/i) != null);
 
     var inputCard = new builder.Message(session)
     .addAttachment({
@@ -228,7 +247,46 @@ function renderEditableCard(session, builder, inputConversation)
                     "value": `${otherSelected}`,
                     "valueOn": "true",
                     "valueOff": "false"
-                },    
+                },
+                {
+                    "type": "TextBlock",
+                    "text": `Project Stage:`
+                },
+                {
+      				"type": "Input.ChoiceSet",
+      				"id": "projectstage",
+      				"style": "compact",
+      				"isMultiSelect": false,
+      				"choices":
+      				[
+				        {
+				          "title": "Pre-ProofOfConcept",
+				          "value": "Pre-POC",
+				          "isSelected": prePOCSelected
+				        },
+				        {
+				          "title": "ProofOfConcept",
+				          "value": "POC",
+				          "isSelected": POCSelected
+				        },
+				        {
+				          "title": "Production",
+				          "value": "Production",
+				          "isSelected": productionSelected
+				        }
+			      	]
+    			},        
+                {
+                	"type": "TextBlock",
+                	"text": `Blocker(s):`
+                },
+                {
+                	"type": "Input.Text",
+                    "value": `${conversationObject.blockers}`,
+                    "isRequired": "false",
+                    "isMultiline": "true",
+                    "id": "blockers"
+                },
                 {
                     "type": "TextBlock",
                     "text": `Tags:`
@@ -237,6 +295,7 @@ function renderEditableCard(session, builder, inputConversation)
                     "type": "Input.Text",
                     "value": `${conversationObject.tags}`,
                     "isRequired": "false",
+                    "isMultiline": "true",
                     "id": "tags"
                 },
                 {
@@ -338,6 +397,8 @@ function renderText(prompt="", inputConversation)
     outputMessage += `AUTHOR(S)*:\n\n${conversationObject.authors}\n\n---\n`;
     outputMessage += `CUSTOMER CONTACT(S)*:\n\n${conversationObject.contact}\n\n---\n`;
     outputMessage += `PRODUCT(S)*:\n\n${conversationObject.product}\n\n---\n`;
+    outputMessage += `PROJECT STAGE:\n\n${conversationObject.projectstage}\n\n---\n`;
+    outputMessage += `BLOCKER(S):\n\n${conversationObject.blockers}\n\n---\n`;
     outputMessage += `TAGS:\n\n${conversationObject.tags}\n\n---\n`;
     outputMessage += `SUMMARY:\n\n${conversationObject.summary}\n\n---\n`;
     outputMessage += `NOTES*:\n\n${conversationObject.notes}`;

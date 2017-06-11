@@ -4,6 +4,7 @@ var botbuilder_azure = require("botbuilder-azure");
 
 var Sequelize = require('sequelize');
 var Fuse = require('fuse.js');
+var Feedback;
 // var Connection = require('tedious').Connection;
 // var Request = require('tedious').Request;
 // var TYPES = require('tedious').TYPES;
@@ -36,7 +37,7 @@ if (process.env.DB_SERVER)
         .done();
    
     //Define 'feedback' model
-    var Feedback = db_connection.define('feedback',{
+    Feedback = db_connection.define('feedback',{
         Name: Sequelize.STRING,
         Authors: Sequelize.STRING,
         Company: Sequelize.STRING,
@@ -44,7 +45,9 @@ if (process.env.DB_SERVER)
         Product: Sequelize.STRING,
         Notes: Sequelize.STRING(3000),
         Summary: Sequelize.STRING,
-        Tags: Sequelize.STRING
+        Tags: Sequelize.STRING,
+        Blockers: Sequelize.STRING,
+        ProjectStage: Sequelize.STRING
     });
 
     db_connection.sync().then(function()
@@ -485,169 +488,13 @@ bot.dialog('/batchParser',
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
         {
-            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-            var conversationTemplateRegex = /(author\(s\)[*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)/i;
-
-            // Parse email signatures out of input text
-            var templateTokens = session.message.text.replace(emailSignatureRegex, '');
-            templateTokens = templateTokens.split(conversationTemplateRegex);
-            console.log(templateTokens);
-
-            for (var token=0; token<templateTokens.length; token++)
-            {
-                if (templateTokens[token].search(/author\(s\)[*]*?:/i) != -1)
-                {
-                    // Ignore input if it's default text, include otherwise
-                    if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
-                    {
-                        if (templateTokens[token+1].includes(session.userData.alias))
-                        {
-                            var inputAuthors = templateTokens[token+1];
-                            inputAuthors = inputAuthors.replace(/[__\r\n]+/g,'');
-                            session.conversationData["authors"] = inputAuthors;
-                        }
-                        else
-                        {
-                            // Include author alias if it is not included in authors list
-                            var authorsList = session.userData.alias + ", " + templateTokens[token+1];
-                            authorsList = authorsList.replace(/,$/g, '');
-                            authorsList = authorsList.replace(/[__\r\n]+/g,'');
-                            session.conversationData["authors"] = authorsList;
-                        }    
-                    }
-                }
-                else if (templateTokens[token].search(/company[*]?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{company name}/i) == -1)
-                    {
-                        var inputCompany = templateTokens[token+1];
-                        inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
-                        session.conversationData["company"] = inputCompany;
-                    }
-                }
-                else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{customer contact name}/i) == -1)
-                    {
-                        var inputContacts = templateTokens[token+1];
-                        inputContacts = inputContacts.replace(/[__\r\n]+/g,'');
-                        session.conversationData["contact"] = inputContacts;
-                    }
-                }
-                else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/i) == -1)
-                    {
-                        var inputProducts = templateTokens[token+1];
-                        inputProducts = inputProducts.replace(/[__\r\n]+/g,'');
-                        session.conversationData["product"] = inputProducts;
-                    }
-                }
-                else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{tag}/i) == -1)
-                    {
-                        var inputTags = templateTokens[token+1];
-                        inputTags = inputTags.replace(/[__\r\n]+/g,'');
-                        session.conversationData["tags"] = inputTags;
-                    }
-                }
-                else if (templateTokens[token].search(/notes[*]?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
-                    {
-                        var inputNotes = botdisplay.renderEmailConversation(templateTokens[token+1]);
-                        session.conversationData["notes"] = inputNotes;
-                    }    
-                }
-                else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
-                    {
-                        var inputSummary = templateTokens[token+1];
-                        inputSummary = inputSummary.replace(/[__\r\n]+/g,'');
-                        session.conversationData["summary"] = inputSummary;
-                    }
-                }
-            }
-
+            parseConversationTemplate(session, session.message.text);
         }
         // Parse input conversation template
         else
         {
             session.sendTyping();
-            var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-            var conversationTemplateRegex = /(\w+[()\w]*:\s*)/i;
-
-            // Parse email signatures out of input text
-            var templateTokens = args.replace(emailSignatureRegex, '');
-        
-            // Parse lines out of input text
-            templateTokens = templateTokens.replace(/__/g,'');
-                   
-            templateTokens = templateTokens.split(conversationTemplateRegex);
-            
-            for (var token = 0; token<templateTokens.length; token++)
-            {
-                if (templateTokens[token].search(/author[(s)*]*?:/i) != -1)
-                {
-                    // Ignore input if it's default text, include otherwise
-                    if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
-                    {
-                        if (templateTokens[token+1].includes(session.userData.alias))
-                            session.conversationData["authors"] = templateTokens[token+1];
-                        else
-                        {
-                            // Include author alias if it is not included in authors list
-                            var authorsList = session.userData.alias + "," + templateTokens[token+1];
-                            authorsList = authorsList.replace(/,$/g, "");
-                            session.conversationData["authors"] = authorsList;
-                        }    
-                    }
-                }
-                else if (templateTokens[token].search(/company[*]?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{company name}/i) == -1)
-                        session.conversationData["company"] = templateTokens[token+1];
-                }
-                else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{customer contact name}/i) == -1)
-                        session.conversationData["contact"] = templateTokens[token+1];
-                }
-                else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/i) == -1)
-                        session.conversationData["product"] = templateTokens[token+1];
-                }
-                else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{tag}/i) == -1)
-                        session.conversationData["tags"] = templateTokens[token+1];
-                }
-                else if (templateTokens[token].search(/notes[*]?:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
-                        session.conversationData["notes"] = templateTokens[token+1];
-                }
-                else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
-                {
-                    // Ignore input if it's default text
-                    if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
-                        session.conversationData["summary"] = templateTokens[token+1];
-                }
-            }
+            parseConversationTemplate(session, args);
         }
 
         if (session.conversationData.displayMarkdown)
@@ -927,6 +774,8 @@ bot.dialog('/displayEditableCard',
                 session.conversationData.tags = session.message.value.tags;
                 session.conversationData.notes = session.message.value.notes;
                 session.conversationData.summary = session.message.value.summary;
+                session.conversationData.blockers = session.message.value.blockers;
+                session.conversationData.projectstage = session.message.value.projectstage;
 
                 if (session.message.value.ProductVM == "true")
                     selectedProducts += "SQL VM,";
@@ -995,16 +844,19 @@ bot.dialog('/confirm', [
         if (process.env.DB_SERVER)
         {
             Feedback.create({
-                Name: session.userData.name,
+                Name: session.userData.alias,
                 Authors: session.conversationData.authors,
                 Company: session.conversationData.company,
                 Contact: session.conversationData.contact,
                 Product: session.conversationData.product,
                 Notes: session.conversationData.notes,
                 Summary: session.conversationData.summary,
-                Tags: session.conversationData.tags
+                Tags: session.conversationData.tags,
+                Blockers: session.conversationData.blockers,
+                ProjectStage: session.conversationData.projectstage
             }).then(feedback => {console.log(feedback.get({plain: true}))});
-            //db_connection.close();
+                //db_connection.close();
+            
         }
 
         session.send("Your conversation has been recorded.")
@@ -1123,10 +975,134 @@ function getConversationTemplate()
     conversationTemplate+= "**Company:** {company name} \n\n";
     conversationTemplate+= "**Contact:** {customer contact name}, {customer contact name} ... \n\n";
     conversationTemplate+= "**Product:** {SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other} \n\n";
-    conversationTemplate+= "**Tags(optional):** {tag}, {tag} ... \n\n";
-    conversationTemplate+= "**Summary(optional):** {enter short summary of note here}\n\n";
     conversationTemplate+= "**Notes:** {enter note text here} \n\n";
+    conversationTemplate+= "**Summary(optional):** {enter short summary of note here}\n\n";
     return conversationTemplate
+}
+
+//Parse conversation template into session variable
+function parseConversationTemplate(session, inputText)
+{
+    var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
+    var conversationTemplateRegex = /(^author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)|blockers?:|blockers?[(optional)]+:|projectstage:|projectstage[(optional)]+:|project stage[(optional)]+:|project stage:/im;
+
+    // Parse email signatures out of input text
+    var templateTokens = inputText.replace(emailSignatureRegex, '');
+
+    // Parse lines out of input text
+    templateTokens = templateTokens.replace(/__/g,'');
+    
+    //Split input text into tokens
+    templateTokens = templateTokens.split(conversationTemplateRegex);
+
+    for (var token=0; token<templateTokens.length; token++)
+    {
+        if (templateTokens[token].search(/author[(s)*]*?:/i) != -1)
+        {
+            // Ignore input if it's default text, include otherwise
+            if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
+            {
+                if (templateTokens[token+1].includes(session.userData.alias))
+                {
+                    var inputAuthors = templateTokens[token+1];
+                    inputAuthors = inputAuthors.replace(/[__\r\n]+/g,'');
+                    session.conversationData["authors"] = inputAuthors;
+                }
+                else
+                {
+                    // Include author alias if it is not included in authors list
+                    var authorsList = session.userData.alias + ", " + templateTokens[token+1];
+                    authorsList = authorsList.replace(/,$/g, '');
+                    authorsList = authorsList.replace(/[__\r\n]+/g,'');
+                    session.conversationData["authors"] = authorsList;
+                }    
+            }
+        }
+        else if (templateTokens[token].search(/company[*]?:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{company name}/i) == -1)
+            {
+                var inputCompany = templateTokens[token+1];
+                inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
+                session.conversationData["company"] = inputCompany;
+            }
+        }
+        else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{customer contact name}/i) == -1)
+            {
+                var inputContacts = templateTokens[token+1];
+                inputContacts = inputContacts.replace(/[__\r\n]+/g,'');
+                session.conversationData["contact"] = inputContacts;
+            }
+        }
+        else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/i) == -1)
+            {
+                var inputProducts = templateTokens[token+1];
+                inputProducts = inputProducts.replace(/[__\r\n]+/g,'');
+                session.conversationData["product"] = inputProducts;
+            }
+        }
+        else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{tag}/i) == -1)
+            {
+                var inputTags = templateTokens[token+1];
+                inputTags = inputTags.replace(/[__\r\n]+/g,'');
+                session.conversationData["tags"] = inputTags;
+            }
+        }
+        else if (templateTokens[token].search(/notes[*]?:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
+            {
+                var inputNotes;
+
+                if (isEmail(templateTokens[token+1]))
+                    inputNotes = botdisplay.renderEmailConversation(templateTokens[token+1]);
+                else
+                    inputNotes = templateTokens[token+1];
+                session.conversationData["notes"] = inputNotes;
+            }    
+        }
+        else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
+            {
+                var inputSummary = templateTokens[token+1];
+                inputSummary = inputSummary.replace(/[__\r\n]+/g,'');
+                session.conversationData["summary"] = inputSummary;
+            }
+        }
+        else if (templateTokens[token].search(/blockers?:|blockers?[(optional)]+:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{blocker}/i) == -1)
+            {
+                var inputBlockers = templateTokens[token+1];
+                inputBlockers = inputBlockers.replace(/[__\r\n]+/g,'');
+                session.conversationData["blockers"] = inputBlockers;
+            }
+        }
+        else if (templateTokens[token].search(/projectstage:|projectstage[(optional)]+:|project stage[(optional)]+:|project stage:/i) != -1)
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{Select one of: Pre-POC, POC, Production}/i) == -1)
+            {
+                var inputStage = templateTokens[token+1];
+                inputStage = inputStage.replace(/[__\r\n]+/g,'');
+                session.conversationData["projectstage"] = inputStage;
+            }
+        }
+    }
 }
 
 
