@@ -355,7 +355,7 @@ function renderEmailConversation(inputEmail)
 {
 	//Remove line delimiters from input
 	var inputEmailTokens = inputEmail.replace(/__/g,'');
-	inputEmailTokens = inputEmailTokens.replace(/----/g,'');
+	inputEmailTokens = inputEmailTokens.replace(/----|:----/g,'');
 
 	//Split input text by email tags
 	var emailTokenRegex = /(from:)|(sent:)|(to: )|(subject:)/ig;
@@ -378,8 +378,7 @@ function renderEmailConversation(inputEmail)
 
 	            // Trim out email signature from initial forward message
 	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '');
-	            forwardMessage = forwardMessage.replace(/^[\r\n]+|[\r\n]+$/g,'')
-	            outputEmail = forwardMessage + "\n\n`----`\n\n";
+	            outputEmail = forwardMessage + "\n\n`:----`\n\n";;
            	}
 			
 			outputEmail+= "From: ";
@@ -426,7 +425,14 @@ function renderEmailConversation(inputEmail)
 					subjectBody = subjectBody.replace(urlLinks[0], markdownLink);
 				urlLinks = urlRegex.exec(subjectBody);
 			}
-			subjectBody = subjectBody.replace(/\r\n/g,'\r\n\r\n');
+			var newLineRegex = /^[a-zA-Z'.,-: ()\?]+(\r\n)/gm;
+			var newLineMatch = newLineRegex.exec(subjectBody);
+
+			while (newLineMatch != null)
+			{
+				subjectBody = subjectBody.replace(newLineMatch[1],'\r\n\r\n');
+				newLineMatch = newLineRegex.exec(subjectBody);
+			}
 
 			outputEmail+= subjectBody;
 			outputEmail+= "\n\n";
