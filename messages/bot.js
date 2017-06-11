@@ -994,6 +994,7 @@ function parseConversationTemplate(session, inputText)
     
     //Split input text into tokens
     templateTokens = templateTokens.split(conversationTemplateRegex);
+    console.log(templateTokens);
 
     for (var token=0; token<templateTokens.length; token++)
     {
@@ -1051,7 +1052,7 @@ function parseConversationTemplate(session, inputText)
         else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
         {
             // Ignore input if it's default text
-            if (templateTokens[token+1].search(/{tag}/i) == -1)
+            if (templateTokens[token+1].search(/{Enter a comma-separated list of tags if any}/i) == -1)
             {
                 var inputTags = templateTokens[token+1];
                 inputTags = inputTags.replace(/[__\r\n]+/g,'');
@@ -1085,7 +1086,7 @@ function parseConversationTemplate(session, inputText)
         else if (templateTokens[token].search(/blockers?:|blockers?[(optional)]+:/i) != -1)
         {
             // Ignore input if it's default text
-            if (templateTokens[token+1].search(/{blocker}/i) == -1)
+            if (templateTokens[token+1].search(/{Enter a comma-separated list of blockers if any}/i) == -1)
             {
                 var inputBlockers = templateTokens[token+1];
                 inputBlockers = inputBlockers.replace(/[__\r\n]+/g,'');
@@ -1103,6 +1104,7 @@ function parseConversationTemplate(session, inputText)
             }
         }
     }
+    console.log('completed template parsing');
 }
 
 

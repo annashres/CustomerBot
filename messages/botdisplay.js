@@ -26,7 +26,7 @@ function initializeConversationObject(inputConversation)
     if (!conversationObject.authors)
         conversationObject["authors"]="{Microsoft alias}";
     if (!conversationObject.tags)
-        conversationObject["tags"]="{tag}, {tag} ...";
+        conversationObject["tags"]="{Enter a comma-separated list of tags if any}";
     if (!conversationObject.notes) 
         conversationObject["notes"]="{enter note text here}";
     if (!conversationObject.summary)
@@ -34,7 +34,7 @@ function initializeConversationObject(inputConversation)
     if (!conversationObject.projectstage)
     	conversationObject["projectstage"]="{Select one of: Pre-POC, POC, Production}";
     if (!conversationObject.blockers)
-    	conversationObject["blockers"]="{blocker}, {blocker} ..."
+    	conversationObject["blockers"]="{Enter a comma-separated list of blockers if any}"
 
     return conversationObject;
 }
