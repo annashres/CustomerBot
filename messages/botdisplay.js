@@ -377,7 +377,8 @@ function renderEmailConversation(inputEmail)
 	            var forwardMessage = inputEmail.substring(0, inputEmail.indexOf("From:"));
 
 	            // Trim out email signature from initial forward message
-	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '').trim();
+	            forwardMessage = forwardMessage.replace(emailSignatureRegex, '');
+	            forwardMessage = forwardMessage.replace(/^[\r\n]+|[\r\n]+$/g,'')
 	            outputEmail = forwardMessage + "\n\n`----`\n\n";
            	}
 			
