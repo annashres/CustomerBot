@@ -355,7 +355,7 @@ function renderEmailConversation(inputEmail)
 {
 	//Remove line delimiters from input
 	var inputEmailTokens = inputEmail.replace(/__/g,'');
-	inputEmailTokens = inputEmailTokens.replace(/----|:----/g,'');
+	inputEmailTokens = inputEmailTokens.replace(/----|:-+/g,'');
 
 	//Split input text by email tags
 	var emailTokenRegex = /(from:)|(sent:)|(to: )|(subject:)/ig;
