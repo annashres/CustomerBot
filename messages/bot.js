@@ -488,6 +488,7 @@ bot.dialog('/batchParser',
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
         {
+            console.log('parsing email response template');
             parseConversationTemplate(session, session.message.text);
         }
         // Parse input conversation template
@@ -983,6 +984,7 @@ function getConversationTemplate()
 //Parse conversation template into session variable
 function parseConversationTemplate(session, inputText)
 {
+    console.log('parsing the conversation template');
     var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
     var conversationTemplateRegex = /(^author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)|blockers?:|blockers?[(optional)]+:|projectstage:|projectstage[(optional)]+:|project stage[(optional)]+:|project stage:/im;
 
@@ -994,7 +996,7 @@ function parseConversationTemplate(session, inputText)
     
     //Split input text into tokens
     templateTokens = templateTokens.split(conversationTemplateRegex);
-    console.log(templateTokens);
+    console.log('tokens:',templateTokens);
 
     for (var token=0; token<templateTokens.length; token++)
     {
