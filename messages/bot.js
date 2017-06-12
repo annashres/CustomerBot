@@ -43,8 +43,8 @@ if (process.env.DB_SERVER)
         Company: Sequelize.STRING,
         Contact: Sequelize.STRING,
         Product: Sequelize.STRING,
-        Notes: Sequelize.STRING(3000),
-        Summary: Sequelize.STRING,
+        Notes: Sequelize.TEXT,
+        Summary: Sequelize.STRING(400),
         Tags: Sequelize.STRING,
         Blockers: Sequelize.STRING,
         ProjectStage: Sequelize.STRING
