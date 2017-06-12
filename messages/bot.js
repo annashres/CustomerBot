@@ -997,13 +997,14 @@ function parseConversationTemplate(session, inputText)
     //Split input text into tokens
     templateTokens = templateTokens.split(conversationTemplateRegex);
     console.log('tokens:',templateTokens);
+    var endToken = templateTokens.length -1;
 
     for (var token=0; token<templateTokens.length; token++)
     {
         if (templateTokens[token].search(/author[(s)*]*?:/i) != -1)
         {
             // Ignore input if it's default text, include otherwise
-            if (templateTokens[token+1].search(/{Microsoft alias}/i) == -1)
+            if ((token != endToken) && (templateTokens[token+1].search(/{Microsoft alias}/i) == -1))
             {
                 if (templateTokens[token+1].includes(session.userData.alias))
                 {
@@ -1022,7 +1023,7 @@ function parseConversationTemplate(session, inputText)
             }
             console.log('completed author parsing');
         }
-        else if (templateTokens[token].search(/company[*]?:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/company[*]?:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{company name}/i) == -1)
@@ -1033,7 +1034,7 @@ function parseConversationTemplate(session, inputText)
             }
             console.log('completed company parsing');
         }
-        else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/contact[(s)*]*?:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{customer contact name}/i) == -1)
@@ -1044,7 +1045,7 @@ function parseConversationTemplate(session, inputText)
             }
             console.log('completed contact parsing');
         }
-        else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/product[(s)*]*?:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}/i) == -1)
@@ -1055,7 +1056,7 @@ function parseConversationTemplate(session, inputText)
             }
             console.log('completed product parsing');
         }
-        else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{Enter a comma-separated list of tags if any}/i) == -1)
@@ -1066,7 +1067,7 @@ function parseConversationTemplate(session, inputText)
             }
             console.log('completed tags parsing');
         }
-        else if (templateTokens[token].search(/notes[*]?:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/notes[*]?:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{enter note text here}/i) == -1)
@@ -1081,7 +1082,7 @@ function parseConversationTemplate(session, inputText)
             } 
             console.log('completed notes parsing');
         }
-        else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{enter short summary of note here}/i) == -1)
@@ -1092,7 +1093,7 @@ function parseConversationTemplate(session, inputText)
             }
             console.log('completed summary parsing');
         }
-        else if (templateTokens[token].search(/blocker[(s)]*?:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/blocker[(s)]*?:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{Enter a comma-separated list of blockers if any}/i) == -1)
@@ -1103,7 +1104,7 @@ function parseConversationTemplate(session, inputText)
             }
             console.log('completed blocker parsing');
         }
-        else if (templateTokens[token].search(/projectstage:|project stage:/i) != -1)
+        else if ((token != endToken) && (templateTokens[token].search(/projectstage:|project stage:/i) != -1))
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{Select one of: Pre-POC, POC, Production}/i) == -1)
