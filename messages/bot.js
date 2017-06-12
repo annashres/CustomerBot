@@ -248,6 +248,7 @@ bot.dialog('/firstRun',
 // Selection dialog - this dialog presents the user with bot actions. This is typically the screen users will start with
 bot.dialog('/selectAction', 
 [
+    console.log(session.message);
     function(session, args, next)
     {
         var userName = session.userData.firstName;
@@ -995,7 +996,7 @@ bot.dialog('/confirm', [
                 session.conversationData.blockers = null;
             if (session.conversationData.projectstage == "{Select one of: Pre-POC, POC, Production}")
                 session.conversationData.projectstage = null;
-            
+
             Feedback.create({
                 Name: session.userData.alias,
                 Authors: session.conversationData.authors,
