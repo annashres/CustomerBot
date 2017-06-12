@@ -1020,6 +1020,7 @@ function parseConversationTemplate(session, inputText)
                     session.conversationData["authors"] = authorsList;
                 }    
             }
+            console.log('completed author parsing');
         }
         else if (templateTokens[token].search(/company[*]?:/i) != -1)
         {
@@ -1030,6 +1031,7 @@ function parseConversationTemplate(session, inputText)
                 inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
                 session.conversationData["company"] = inputCompany;
             }
+            console.log('completed company parsing');
         }
         else if (templateTokens[token].search(/contact[(s)*]*?:/i) != -1)
         {
@@ -1040,6 +1042,7 @@ function parseConversationTemplate(session, inputText)
                 inputContacts = inputContacts.replace(/[__\r\n]+/g,'');
                 session.conversationData["contact"] = inputContacts;
             }
+            console.log('completed contact parsing');
         }
         else if (templateTokens[token].search(/product[(s)*]*?:/i) != -1)
         {
@@ -1050,6 +1053,7 @@ function parseConversationTemplate(session, inputText)
                 inputProducts = inputProducts.replace(/[__\r\n]+/g,'');
                 session.conversationData["product"] = inputProducts;
             }
+            console.log('completed product parsing');
         }
         else if (templateTokens[token].search(/tags?:|tags?[(optional)]+:/i) != -1)
         {
@@ -1060,6 +1064,7 @@ function parseConversationTemplate(session, inputText)
                 inputTags = inputTags.replace(/[__\r\n]+/g,'');
                 session.conversationData["tags"] = inputTags;
             }
+            console.log('completed tags parsing');
         }
         else if (templateTokens[token].search(/notes[*]?:/i) != -1)
         {
@@ -1073,7 +1078,8 @@ function parseConversationTemplate(session, inputText)
                 else
                     inputNotes = templateTokens[token+1];
                 session.conversationData["notes"] = inputNotes;
-            }    
+            } 
+            console.log('completed notes parsing');
         }
         else if (templateTokens[token].search(/summary:|summary[(optional)]+:/i) != -1)
         {
@@ -1084,8 +1090,9 @@ function parseConversationTemplate(session, inputText)
                 inputSummary = inputSummary.replace(/[__\r\n]+/g,'');
                 session.conversationData["summary"] = inputSummary;
             }
+            console.log('completed summary parsing');
         }
-        else if (templateTokens[token].search(/blockers?:|blockers?[(optional)]+:/i) != -1)
+        else if (templateTokens[token].search(/blocker[(s)]*?:/i) != -1)
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{Enter a comma-separated list of blockers if any}/i) == -1)
@@ -1094,8 +1101,9 @@ function parseConversationTemplate(session, inputText)
                 inputBlockers = inputBlockers.replace(/[__\r\n]+/g,'');
                 session.conversationData["blockers"] = inputBlockers;
             }
+            console.log('completed blocker parsing');
         }
-        else if (templateTokens[token].search(/projectstage:|projectstage[(optional)]+:|project stage[(optional)]+:|project stage:/i) != -1)
+        else if (templateTokens[token].search(/projectstage:|project stage:/i) != -1)
         {
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{Select one of: Pre-POC, POC, Production}/i) == -1)
@@ -1104,6 +1112,7 @@ function parseConversationTemplate(session, inputText)
                 inputStage = inputStage.replace(/[__\r\n]+/g,'');
                 session.conversationData["projectstage"] = inputStage;
             }
+            console.log('completed project stage parsing');
         }
     }
     console.log('completed template parsing');
