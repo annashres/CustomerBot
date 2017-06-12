@@ -986,7 +986,7 @@ function parseConversationTemplate(session, inputText)
 {
     console.log('parsing the conversation template');
     var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-    var conversationTemplateRegex = /(^author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:)|blockers?:|blockers?[(optional)]+:|projectstage:|projectstage[(optional)]+:|project stage[(optional)]+:|project stage:/im;
+    var conversationTemplateRegex = /(^author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|notes[*]?:|summary:|summary[(optional)]+:|blocker[(s)]*?:|projectstage:|project stage:)/im;
 
     // Parse email signatures out of input text
     var templateTokens = inputText.replace(emailSignatureRegex, '');
