@@ -330,25 +330,36 @@ bot.dialog('/interactiveDataEntry',
 [
     function (session, args, next)
     {
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+
         // This forwards the button click for product selection to the appropriate handler
-        if (session.message.value)
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
             next();
         else
-            builder.Prompts.text(session, "Please enter the Microsoft aliases (separated by commas) of all who were on the call.");
+            builder.Prompts.text(session, "Enter the Microsoft aliases (separated by commas) of all who were on the call.");
     },
     function (session, results, next)
     {
-        if (session.message.value)
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
             next();
         else
         {
             session.conversationData.authors = results.response;
-            builder.Prompts.text(session, "What company did you speak with?");
+            builder.Prompts.text(session, "And what company did you (all) speak with?");
         }
     },
     function (session, results, next)
     {
-        if (session.message.value)
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
             next();
         else
         {
@@ -358,45 +369,166 @@ bot.dialog('/interactiveDataEntry',
     },
     function (session, results, next)
     {
-        if (session.message.value)
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
             next();
         else
         {
             session.conversationData.contact = results.response;
-            session.send("Which product(s) does your customer use?");
+            session.send("Which SQL product(s) does the company use?");
             builder.Prompts.text(session, "Available options (use comma to enter multiple products): {SQL VM, SQL DB, SQL DW, Elastic pool, On-prem SQL Server, Other}");
         }
     },
-    function (session, results)
+    function (session, results, next)
     {
-        var inputText = results.response;
-        var productSelection = "";
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
+            next();
+        else
+        {
+            var inputText = results.response;
+            var productSelection = "";
 
-        if (inputText.match(/VM/i))
-            productSelection += "SQL VM,";
-        if (inputText.match(/DB/i))
-            productSelection += "SQL DB,";
-        if (inputText.match(/pool|elastic/i))
-            productSelection += "Elastic pool,";
-        if (inputText.match(/on-prem|server/i))
-            productSelection += "On-prem SQL Server,";
-        if (inputText.match(/other/i))
-            productSelection += "Other,";
-        productSelection.replace(/,$/g, "");
+            if (inputText.match(/VM/i))
+                productSelection += "SQL VM,";
+            if (inputText.match(/DB/i))
+                productSelection += "SQL DB,";
+            if (inputText.match(/pool|elastic/i))
+                productSelection += "Elastic pool,";
+            if (inputText.match(/on-prem|server/i))
+                productSelection += "On-prem SQL Server,";
+            if (inputText.match(/other/i))
+                productSelection += "Other,";
+            productSelection = productSelection.replace(/,$/g, "");
 
-        session.conversationData.product = productSelection;
-        builder.Prompts.text(session, "Please paste in below any notes you took down during the call");
+            session.conversationData.product = productSelection;
+            builder.Prompts.text(session, "Paste in below any notes you took down during the call");
+        }
+    },
+    function (session, results, next)
+    {
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
+            next();
+        else if (typeof forwardInput != "undefined" && (currentStep == forwardInput))
+        {
+            if (session.message.text)
+            {
+                if (session.message.text == "Skip")
+                    session.conversationData["projectstage"] = "{Select one of: Pre-POC, POC, Production}";
+                else
+                    session.conversationData["projectstage"] = session.message.text;
+
+                session.dialogData.forwardInput = null;
+                next();
+            }
+        }
+        else
+        {
+            session.conversationData.notes = results.response;
+            session.send("What stage of development is the company's product currently in?");
+           
+            var stageOptions = new builder.ThumbnailCard(session)
+                .title("Project Stage options")
+                .buttons([
+                    builder.CardAction.imBack(session, "Skip", "Skip this question"),
+                    builder.CardAction.imBack(session, "Pre-POC", "Pre-ProofOfConcept"),
+                    builder.CardAction.imBack(session, "POC", "ProofOfConcept"),
+                    builder.CardAction.imBack(session, "Production", "Production")
+                ]);
+
+            session.dialogData["forwardInput"] = currentStep;
+            session.send(new builder.Message(session).addAttachment(stageOptions));
+        }        
+    },
+    function (session, results, next)
+    {
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
+            next();
+        else if (typeof forwardInput != "undefined" && (currentStep == forwardInput))
+        {
+            if (session.message.text)
+            {
+                if (session.message.text == "Skip")
+                    session.conversationData["blockers"] = "{Enter a comma-separated list of blockers if any}";
+                else
+                    session.conversationData["blockers"] = session.message.text;
+
+                session.dialogData.forwardInput = null;
+                next();
+            }
+        }
+        else 
+        {
+            session.send("Are there any blockers that are preventing continuing development of the product? Enter a comma-separated list below or hit the 'Skip' button to skip this question.");
+
+            var skipButton = new builder.ThumbnailCard(session)
+                .title("Skip this question")
+                .buttons([builder.CardAction.imBack(session, "Skip", "Skip")]);
+
+            session.dialogData["forwardInput"] = currentStep;
+            session.send(new builder.Message(session).addAttachment(skipButton));
+        }       
+    },
+    function(session, results, next)
+    {
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
+            next();
+        else if (typeof forwardInput != "undefined" && (currentStep == forwardInput))
+        {
+            if (session.message.text)
+            {
+                if (session.message.text == "Skip")
+                    session.conversationData["tags"] = "{Enter a comma-separated list of tags if any}";
+                else
+                    session.conversationData["tags"] = session.message.text;
+
+                session.dialogData.forwardInput = null;
+                next();
+            }
+        }
+        else
+        {
+            session.send("Are there any tags you would like to add to make this conversation easier to find in the future? Enter a comma-separated list below or hit the 'Skip' button to skip this question.");
+
+            var skipButton = new builder.ThumbnailCard(session)
+                .title("Skip this question")
+                .buttons([builder.CardAction.imBack(session, "Skip", "Skip")]);
+
+            session.dialogData["forwardInput"] = currentStep;
+            session.send(new builder.Message(session).addAttachment(skipButton));
+        }       
     },
     function (session, results)
     {
-        session.conversationData.notes = results.response;
-        session.send("Any tags you would like to add to make this conversation easier to find in the future?")
-        builder.Prompts.text(session, "Popular options include tagging features your customer uses, tagging private preview status, tagging blockers and happy moments that were revealed during the conversation");
-    },
-    function (session, results)
-    {
-        session.conversationData.tags = results.response;
         session.send("That's all I need. Thanks for the info.");
+
+        //Set properties to null if they have default values
+        if (session.conversationData.projectstage == "{Select one of: Pre-POC, POC, Production}")
+            session.conversationData["projectstage"] = null;
+        if (session.conversationData.blockers == "{Enter a comma-separated list of blockers if any}")
+            session.conversationData["blockers"] = null;
+        if (session.conversationData.tags == "{Enter a comma-separated list of tags if any}")
+            session.conversationData["tags"] = null;
+
+        console.log(session.conversationData);
         
         if (session.message.address.channelId === "emulator")
             session.beginDialog('/displayConversationCard', session.conversationData);
@@ -844,6 +976,26 @@ bot.dialog('/confirm', [
         //Write feedback to database (if connected)
         if (process.env.DB_SERVER)
         {
+            // Set default properties to null
+            if (session.conversationData.authors == "{Microsoft alias}")
+                session.conversationData.authors = null;
+            if (session.conversationData.company == "{company name}")
+                session.conversationData.company = null;
+            if (session.conversationData.contact == "{customer contact name}")
+                session.conversationData.contact = null;
+            if (session.conversationData.product == "{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}")
+                session.conversationData.product = null;
+            if (session.conversationData.notes == "{enter note text here}")
+                session.conversationData.notes = null;
+            if (session.conversationData.summary == "{enter short summary of note here}")
+                session.conversationData.summary = null;
+            if (session.conversationData.tags == "{Enter a comma-separated list of tags if any}")
+                session.conversationData.tags = null;
+            if (session.conversationData.blockers == "{Enter a comma-separated list of blockers if any}")
+                session.conversationData.blockers = null;
+            if (session.conversationData.projectstage == "{Select one of: Pre-POC, POC, Production}")
+                session.conversationData.projectstage = null;
+            
             Feedback.create({
                 Name: session.userData.alias,
                 Authors: session.conversationData.authors,
