@@ -248,12 +248,12 @@ bot.dialog('/firstRun',
 // Selection dialog - this dialog presents the user with bot actions. This is typically the screen users will start with
 bot.dialog('/selectAction', 
 [
-    console.log(session.message);
     function(session, args, next)
     {
         var userName = session.userData.firstName;
         var message;
 
+        console.log(session.message);
         if (session.message.address.channelId === "email")
         {
             // Send markdown version of conversation card for email channel
