@@ -257,7 +257,7 @@ function renderEditableCard(session, builder, inputConversation)
       				"id": "projectstage",
       				"style": "compact",
       				"isMultiSelect": false,
-      				"value": `${conversationObject.projectstage}`
+      				"value": `${conversationObject.projectstage}`,
       				"choices":
       				[
 				        {
