@@ -49,7 +49,7 @@ function renderCard(session, builder, inputConversation, inputActions=null)
     companyName = companyName.trim();
     var header = "Conversation with " + companyName + "\n\n";
 
-    if (conversationObject.updatedAt)
+    if (inputConversation.updatedAt)
     {
     	var dateOptions = { 
 							weekday: 'long',
@@ -59,7 +59,7 @@ function renderCard(session, builder, inputConversation, inputActions=null)
   							hour: '2-digit',
   							minute: '2-digit'
   						};
-  		var recordedDate = conversationObject.updatedAt.toLocaleString('en-us', dateOptions);
+  		var recordedDate = inputConversation.updatedAt.toLocaleString('en-us', dateOptions);
   		header += `(Recorded on: ${recordedDate})\n\n`;
     }
 
@@ -419,7 +419,7 @@ function renderText(prompt="", inputConversation)
     outputMessage += `**Conversation with ${companyName}**\n\n`;
 
     // Add recorded date if conversation was previously saved
-    if (conversationObject.updatedAt)
+    if (inputConversation.updatedAt)
     {
     	var dateOptions = { 
 							weekday: 'long',
@@ -429,7 +429,7 @@ function renderText(prompt="", inputConversation)
   							hour: '2-digit',
   							minute: '2-digit'
   						};
-  		var recordedDate = conversationObject.updatedAt.toLocaleString('en-us', dateOptions);
+  		var recordedDate = inputConversation.updatedAt.toLocaleString('en-us', dateOptions);
   		outputMessage += `(Recorded on: ${recordedDate})\n\n`;
     }
 

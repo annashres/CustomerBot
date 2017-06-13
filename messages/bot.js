@@ -673,7 +673,7 @@ bot.dialog('/fetchConversation',
         }
         else if (session.message.text.match(/^more conversations/i))
         {
-            var conversations = botdisplay.renderSummaryCard(session, builder, results);
+            var conversations = botdisplay.renderSummaryCard(session, builder, session.conversationData.retrievedConversations);
 
             var outputCards = new builder.Message(session)
                 .attachmentLayout(builder.AttachmentLayout.carousel)
