@@ -645,6 +645,10 @@ bot.dialog('/fetchConversation',
 [
     function(session, args, next)
     {
+        // Exit if dialog is called on email channel
+        if (session.message.address.channelId == "email")
+            session.endDialog();
+
         if (session.message.text.match(/^conv#/))
         {
             var selection = session.message.text.split(':')[1].trim();
@@ -657,6 +661,28 @@ bot.dialog('/fetchConversation',
                 outputCard = botdisplay.renderText("", selectedConversation);
 
             session.send(outputCard);
+
+            var optionButtons = new builder.ThumbnailCard(session)
+            .title("Available actions")
+            .buttons([
+                builder.CardAction.imBack(session, "More Conversations", "More conversations..."),
+                builder.CardAction.imBack(session, "Return Home", "Return home")
+            ]);
+
+            session.send(new builder.Message(session).addAttachment(optionButtons));            
+        }
+        else if (session.message.text.match(/^more conversations/i))
+        {
+            var conversations = botdisplay.renderSummaryCard(session, builder, results);
+
+            var outputCards = new builder.Message(session)
+                .attachmentLayout(builder.AttachmentLayout.carousel)
+                .attachments(conversations);
+
+            session.send(outputCards);
+        }
+        else if (session.message.text.match(/^return home/i))
+        {
             session.conversationData.retrievedConversations = null;
             session.endDialog("Enter OK to return to home screen");
         }
@@ -684,7 +710,8 @@ bot.dialog('/fetchConversation',
                 shouldSort: true,
                 includeMatches: true,
                 minMatchCharLength: 1,
-                keys: ["company"]
+                keys: ["company"],
+                threshold: 0.4
             }
             var fuse = new Fuse(companies, searchOptions);
 

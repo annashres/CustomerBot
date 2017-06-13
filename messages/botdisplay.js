@@ -47,7 +47,21 @@ function renderCard(session, builder, inputConversation, inputActions=null)
     var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
     var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
     companyName = companyName.trim();
-    var header = "Conversation with " + companyName;
+    var header = "Conversation with " + companyName + "\n\n";
+
+    if (conversationObject.updatedAt)
+    {
+    	var dateOptions = { 
+							weekday: 'long',
+  							year: 'numeric',
+ 							month: 'short',
+  							day: 'numeric',
+  							hour: '2-digit',
+  							minute: '2-digit'
+  						};
+  		var recordedDate = conversationObject.updatedAt.toLocaleString('en-us', dateOptions);
+  		header += `(Recorded on: ${recordedDate})\n\n`;
+    }
 
     var cardContent = {
         contentType: "application/vnd.microsoft.card.adaptive",
@@ -352,7 +366,16 @@ function renderSummaryCard(session, builder, inputConversations)
 	{
 		var currConversation = inputConversations[conversation];
 		var title = `Conversation with ${currConversation.Company}`;
-		var subtitle = `Recorded on: ${currConversation.updatedAt}`;
+		var dateOptions = { 
+							weekday: 'long',
+  							year: 'numeric',
+ 							month: 'short',
+  							day: 'numeric',
+  							hour: '2-digit',
+  							minute: '2-digit'
+  						};
+  		var recordedDate = currConversation.updatedAt.toLocaleString('en-us', dateOptions);
+		var subtitle = `Recorded on: ${recordedDate}`;
 		var cardText;
 		var outputCard;
 		
@@ -394,6 +417,22 @@ function renderText(prompt="", inputConversation)
     var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
     companyName = companyName.trim();
     outputMessage += `**Conversation with ${companyName}**\n\n`;
+
+    // Add recorded date if conversation was previously saved
+    if (conversationObject.updatedAt)
+    {
+    	var dateOptions = { 
+							weekday: 'long',
+  							year: 'numeric',
+ 							month: 'short',
+  							day: 'numeric',
+  							hour: '2-digit',
+  							minute: '2-digit'
+  						};
+  		var recordedDate = conversationObject.updatedAt.toLocaleString('en-us', dateOptions);
+  		outputMessage += `(Recorded on: ${recordedDate})\n\n`;
+    }
+
     outputMessage += `COMPANY*:\n\n${conversationObject.company}\n\n---\n`;
     outputMessage += `AUTHOR(S)*:\n\n${conversationObject.authors}\n\n---\n`;
     outputMessage += `CUSTOMER CONTACT(S)*:\n\n${conversationObject.contact}\n\n---\n`;
