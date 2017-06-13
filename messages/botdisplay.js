@@ -356,7 +356,7 @@ function renderSummaryCard(session, builder, inputConversations)
 		var cardText;
 		var outputCard;
 		
-		if (currConversation.Summary)
+		if (currConversation.Summary && (currConversation.Summary != 'NULL'))
 		{
 			cardText = "Summary: ";
 			if (currConversation.Summary.length > 60)
