@@ -560,7 +560,7 @@ bot.dialog('/batchParser',
             // Email parser function goes here
             
             var emailSenderList = [];
-            var emailSenderRegex = /from: ([\w ]+)[\[<]mailto:(\w+@\w+.com)[\]>]/ig;
+            var emailSenderRegex = /from: ([\w ]+)\[mailto:(\w+@\w+.com)\]|from: ([\w ,]+)<(.+@.+\.com)>/ig;
             var emailMatches = emailSenderRegex.exec(session.message.text);
             var msftContacts = "";
             var companyName = "";
