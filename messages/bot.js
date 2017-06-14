@@ -757,7 +757,7 @@ bot.dialog('/fetchConversation',
         if (results.response)
             session.dialogData.inputCompany = results.response.entity;
 
-        var conversationListQuery = `SELECT TOP 10 [id], [Name],[Authors],[Company],[Contact],[Product],[Notes],[Summary],[Tags],[updatedAt] 
+        var conversationListQuery = `SELECT TOP 10 [id], [Name],[Authors],[Company],[Contact],[Product],[Notes],[Summary],[Tags],[Blockers],[ProjectStage],[updatedAt] 
                                      FROM [dbo].[feedbacks] 
                                      WHERE [Company] = '${session.dialogData.inputCompany}'
                                      ORDER BY [updatedAt] DESC`;
@@ -1134,7 +1134,7 @@ function containsKeyword(inputText)
 
 function isValidTemplate(inputText)
 {
-    var hasAuthor = (inputText.search(/author[(s)]*\*?:/i) != -1);
+    var hasAuthor = (inputText.search(/author[(s)*]*\*?:/i) != -1);
     var hasCompany = (inputText.search(/company\*?:/igm) != -1);
     var hasContact = (inputText.search(/contact[(s)]*\*?:/i) != -1);
     var hasProduct = (inputText.search(/product[(s)]*\*?:/i) != -1);
