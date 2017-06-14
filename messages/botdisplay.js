@@ -51,15 +51,7 @@ function renderCard(session, builder, inputConversation, inputActions=null)
 
     if (inputConversation.updatedAt)
     {
-    	var dateOptions = { 
-							weekday: 'long',
-  							year: 'numeric',
- 							month: 'short',
-  							day: 'numeric',
-  							hour: '2-digit',
-  							minute: '2-digit'
-  						};
-  		var recordedDate = inputConversation.updatedAt.toLocaleString('en-us', dateOptions);
+    	var recordedDate = new Date(Date.parse(inputConversation.updatedAt)).toString();
   		header += `(Recorded on: ${recordedDate})\n\n`;
     }
 
@@ -366,15 +358,7 @@ function renderSummaryCard(session, builder, inputConversations)
 	{
 		var currConversation = inputConversations[conversation];
 		var title = `Conversation with ${currConversation.Company}`;
-		var dateOptions = { 
-							weekday: 'long',
-  							year: 'numeric',
- 							month: 'short',
-  							day: 'numeric',
-  							hour: '2-digit',
-  							minute: '2-digit'
-  						};
-  		var recordedDate = currConversation.updatedAt.toLocaleString('en-us', dateOptions);
+		var recordedDate = new Date(Date.parse(currConversation.updatedAt)).toString();
 		var subtitle = `Recorded on: ${recordedDate}`;
 		var cardText;
 		var outputCard;
@@ -421,15 +405,7 @@ function renderText(prompt="", inputConversation)
     // Add recorded date if conversation was previously saved
     if (inputConversation.updatedAt)
     {
-    	var dateOptions = { 
-							weekday: 'long',
-  							year: 'numeric',
- 							month: 'short',
-  							day: 'numeric',
-  							hour: '2-digit',
-  							minute: '2-digit'
-  						};
-  		var recordedDate = inputConversation.updatedAt.toLocaleString('en-us', dateOptions);
+    	var recordedDate = new Date(Date.parse(inputConversation.updatedAt)).toString();
   		outputMessage += `(Recorded on: ${recordedDate})\n\n`;
     }
 

@@ -654,6 +654,7 @@ bot.dialog('/fetchConversation',
             var selection = session.message.text.split(':')[1].trim();
             var selectedConversation = session.conversationData.retrievedConversations[selection];
             var outputCard;
+            var buttonArray;
 
             if (session.message.address.channelId === "emulator")
                 outputCard = botdisplay.renderCard(session, builder, selectedConversation);
@@ -662,12 +663,19 @@ bot.dialog('/fetchConversation',
 
             session.send(outputCard);
 
+            if (session.conversationData.retrievedConversations.length > 1)
+            {
+                buttonArray = [
+                    builder.CardAction.imBack(session, "More Conversations", "More conversations..."),
+                    builder.CardAction.imBack(session, "Return Home", "Return home")
+                ];
+            }
+            else
+                buttonArray = [builder.CardAction.imBack(session, "Return Home", "Return home")];
+            
             var optionButtons = new builder.ThumbnailCard(session)
             .title("Available actions")
-            .buttons([
-                builder.CardAction.imBack(session, "More Conversations", "More conversations..."),
-                builder.CardAction.imBack(session, "Return Home", "Return home")
-            ]);
+            .buttons(buttonArray);
 
             session.send(new builder.Message(session).addAttachment(optionButtons));            
         }
@@ -684,7 +692,8 @@ bot.dialog('/fetchConversation',
         else if (session.message.text.match(/^return home/i))
         {
             session.conversationData.retrievedConversations = null;
-            session.endDialog("Enter OK to return to home screen");
+            session.endDialog();
+            //session.endDialog("Enter OK to return to home screen");
         }
         else if (process.env.DB_SERVER)
             builder.Prompts.text(session, "Which company would you like to retrieve conversations for?");
