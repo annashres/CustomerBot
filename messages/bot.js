@@ -262,19 +262,11 @@ bot.dialog('/selectAction',
             // Parse email chain if bot was forwarded email
             if (isEmail(session.message.text))
             {
-                //var message = `Greetings ${userName},\n\n\n\n`;
-
-                //message+= "I see you've sent a previous conversation in the email body. Give me a few minutes to process this information ...";
-                //session.send(message);
                 session.replaceDialog('/batchParser', session.message.text);
             }
             // Parse conversation template if bot was sent a template as part of greeting
-            else if (containsKeyword(session.message.text))
+            else if (containsTemplateKeyword(session.message.text))
             {
-                //var message = `Greetings ${userName},\n\n\n\n`;
-
-                //message+= "I see you've included a few details from your customer conversation in the email body. Give me a few minutes to process this information ...";
-                //session.send(message);
                 session.replaceDialog('/batchParser', session.message.text);
             }
             else
@@ -568,7 +560,7 @@ bot.dialog('/batchParser',
             // Email parser function goes here
             
             var emailSenderList = [];
-            var emailSenderRegex = /from: ([\w ]+)\[mailto:(\w+@\w+.com)]/ig;
+            var emailSenderRegex = /from: ([\w ]+)[\[<]mailto:(\w+@\w+.com)[\]>]/ig;
             var emailMatches = emailSenderRegex.exec(session.message.text);
             var msftContacts = "";
             var companyName = "";
@@ -591,15 +583,19 @@ bot.dialog('/batchParser',
                 {
                    var authorAlias = author.email.split("@microsoft.com")[0];
                    if (!msftContacts.includes(authorAlias))
-                        msftContacts = msftContacts + authorAlias + ","
+                        msftContacts = msftContacts + "," + authorAlias
+
+                    // Trim leading or trailing commas
+                    msftContacts = msftContacts.replace(/^,|,$/g,'');   
                 }
                 //Extract company name and contact info
                 else
                 {
                     if (!companyContacts.includes(author.name))
                     {
-                        companyContacts = companyContacts + author.name + ","
-                        companyName = author.email.split("@")[1].replace(".com", "");
+                        companyContacts = companyContacts + "," + author.name
+                        companyContacts = companyContacts.replace(/^,|,$/g,'');
+                        companyName = author.email.split("@")[1].replace(/\.[\w]+/g,'');
                     }
                 }
             }
@@ -692,8 +688,7 @@ bot.dialog('/fetchConversation',
         else if (session.message.text.match(/^return home/i))
         {
             session.conversationData.retrievedConversations = null;
-            session.endDialog();
-            //session.endDialog("Enter OK to return to home screen");
+            session.replaceDialog('/selectAction');
         }
         else if (process.env.DB_SERVER)
             builder.Prompts.text(session, "Which company would you like to retrieve conversations for?");
@@ -1112,7 +1107,7 @@ function isEmail(inputText)
 }
 
 //Check if text is valid conversation template
-function containsKeyword(inputText)
+function containsTemplateKeyword(inputText)
 {
     if (inputText.search(/author[(s)]*?:/i) != -1)
         return true;
