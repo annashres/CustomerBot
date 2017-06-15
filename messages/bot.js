@@ -569,10 +569,10 @@ bot.dialog('/batchParser',
             // Parse out all the email senders into a list
             while (emailMatches != null)
             {
-                var author = {name: emailMatches[1], email: emailMatches[2]};
+                emailMatches = emailMatches.filter(n => n);
+                var author = {name: emailMatches[1].replace(',',''), email: emailMatches[2]};
                 emailSenderList.push(author);
-                emailMatches = emailSenderRegex.exec(session.message.text);
-                console.log('author:',author);
+                emailMatches = emailSenderRegex.exec(session.message.text);           
             }
 
             for (var i=0; i<emailSenderList.length; i++)
@@ -602,15 +602,15 @@ bot.dialog('/batchParser',
                 msftContacts = session.userData.alias + ", " + msftContacts;
             
             //Strip out any leading/trailing commas
-            msftContacts = msftContacts.replace(/^,|,$/g, "");
+            msftContacts = msftContacts.replace(/^[, ]+|[, ]+$/g, "");
             companyContacts = companyContacts.replace(/^,|,$/g, "");
+            console.log(msftContacts);
 
             //Save extracted information into conversation variables
             session.conversationData["authors"] = msftContacts;
             session.conversationData["company"] = companyName;
             session.conversationData["contact"] = companyContacts;
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
-            console.log('after email parsing:', session.conversationData);
         }
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
@@ -809,12 +809,11 @@ bot.dialog('/displayConversationCard',
                 "title": "Confirm",
                 "data": { "message" : "confirm"}  
             }
-        ]
-        var outputCard = botdisplay.renderCard(session, builder, args, availableActions)        
+        ]   
         
         if (!session.message.value)
         {
-            //session.send("Please confirm or edit the conversation details below:");
+            var outputCard = botdisplay.renderCard(session, builder, args, availableActions);
             session.send(outputCard);
         }
         

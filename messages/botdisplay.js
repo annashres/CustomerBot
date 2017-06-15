@@ -49,10 +49,13 @@ function renderCard(session, builder, inputConversation, inputActions=null)
     companyName = companyName.trim();
     var header = "Conversation with " + companyName + "\n\n";
 
-    if (inputConversation.updatedAt)
+    if (typeof inputConversation.updatedAt != "undefined")
     {
-    	var recordedDate = new Date(Date.parse(inputConversation.updatedAt)).toString();
-  		header += `(Recorded on: ${recordedDate})\n\n`;
+    	if (inputConversation.updatedAt)
+        {
+            var recordedDate = new Date(Date.parse(inputConversation.updatedAt)).toString();
+      		header += `(Recorded on: ${recordedDate})\n\n`;
+        }
     }
 
     var cardContent = {
@@ -403,10 +406,13 @@ function renderText(prompt="", inputConversation)
     outputMessage += `**Conversation with ${companyName}**\n\n`;
 
     // Add recorded date if conversation was previously saved
-    if (inputConversation.updatedAt)
+    if (typeof inputConversation.updatedAt != "undefined")
     {
-    	var recordedDate = new Date(Date.parse(inputConversation.updatedAt)).toString();
-  		outputMessage += `(Recorded on: ${recordedDate})\n\n`;
+    	if (inputConversation.updatedAt)
+        {
+            var recordedDate = new Date(Date.parse(inputConversation.updatedAt)).toString();
+      		outputMessage += `(Recorded on: ${recordedDate})\n\n`;
+        }
     }
 
     outputMessage += `COMPANY*:\n\n${conversationObject.company}\n\n---\n`;
@@ -487,8 +493,6 @@ function renderEmailConversation(inputEmail)
 			var urlRegex = /<(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})>/ig
 
 			var subjectBody = inputEmailTokens[i+1];
-			console.log('Subject body:', subjectBody);
-		
 			var urlLinks = urlRegex.exec(subjectBody);
 
 			while (urlLinks != null)
