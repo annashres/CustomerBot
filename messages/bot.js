@@ -571,7 +571,8 @@ bot.dialog('/batchParser',
             {
                 var author = {name: emailMatches[1], email: emailMatches[2]};
                 emailSenderList.push(author);
-                emailMatches = emailSenderRegex.exec(session.message.text)
+                emailMatches = emailSenderRegex.exec(session.message.text);
+                console.log('author:',author);
             }
 
             for (var i=0; i<emailSenderList.length; i++)
@@ -584,9 +585,6 @@ bot.dialog('/batchParser',
                    var authorAlias = author.email.split("@microsoft.com")[0];
                    if (!msftContacts.includes(authorAlias))
                         msftContacts = msftContacts + "," + authorAlias
-
-                    // Trim leading or trailing commas
-                    msftContacts = msftContacts.replace(/^,|,$/g,'');   
                 }
                 //Extract company name and contact info
                 else
@@ -594,7 +592,6 @@ bot.dialog('/batchParser',
                     if (!companyContacts.includes(author.name))
                     {
                         companyContacts = companyContacts + "," + author.name
-                        companyContacts = companyContacts.replace(/^,|,$/g,'');
                         companyName = author.email.split("@")[1].replace(/\.[\w]+/g,'');
                     }
                 }
@@ -604,15 +601,16 @@ bot.dialog('/batchParser',
             if (!msftContacts.includes(session.userData.alias))
                 msftContacts = session.userData.alias + ", " + msftContacts;
             
-            //Strip out any trailing commas
-            msftContacts = msftContacts.replace(/,$/g, "");
-            companyContacts = companyContacts.replace(/,$/g, "");
+            //Strip out any leading/trailing commas
+            msftContacts = msftContacts.replace(/^,|,$/g, "");
+            companyContacts = companyContacts.replace(/^,|,$/g, "");
 
             //Save extracted information into conversation variables
             session.conversationData["authors"] = msftContacts;
             session.conversationData["company"] = companyName;
             session.conversationData["contact"] = companyContacts;
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
+            console.log('after email parsing:', session.conversationData);
         }
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
