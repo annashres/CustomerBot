@@ -51,13 +51,6 @@ if (process.env.DB_SERVER)
         ProjectStage: Sequelize.STRING
     });
 
-    //define auth model
-    // app_authcode = db_connection.define('app_authcode',{
-    //     ID:Sequelize.INTEGER,
-    //     Alias: Sequelize.STRING,
-    //     Code: Sequelize.STRING
-    // });
-
     db_connection.sync().then(function()
     {
         console.log("Created database schema from 'feedback' model");
@@ -107,7 +100,7 @@ bot.dialog('/', [
     function (session, args, next)
     {
         var botChannel = session.message.address.channelId;
-
+        session.conversationData.pinExists = false;
         // Send bot intro if this is the user's first interaction with bot
         if ((!session.userData.name) && (botChannel === "emulator"))
             session.beginDialog('/sayHello');
@@ -180,12 +173,13 @@ bot.dialog('/sayHello',
 
 bot.dialog('/auth',
 [
-    function (session) {
+    function (session, args) {
         var userName = session.userData.firstName;
         var signin = new builder.SigninCard(session)
-            .button('Sign-in', 'https://customerauthbot.azurewebsites.net/');  
+            .text('Sign-in')
+            .button('Click to get your pin', 'https://customerauthbot.azurewebsites.net/');  
         session.send(new builder.Message(session).addAttachment(signin));
-        var prompt = "Please type your six-digit pin or login to receive your pin.";
+        var prompt = "Please type your six-digit pin";
         builder.Prompts.text(session, prompt);
 
     },
@@ -200,6 +194,7 @@ bot.dialog('/auth',
         }).then (function (results)
         {
             if (results[0].Code == session.dialogData.pin) {
+                session.conversationData.pinExists = true;
                 session.replaceDialog('/firstRun');
             }
             else{
@@ -292,6 +287,9 @@ bot.dialog('/selectAction',
 [
     function(session, args, next)
     {
+        if (session.conversationData.pinExists == false) {
+            session.replaceDialog('/auth')
+        }
         var userName = session.userData.firstName;
         var message;
 
@@ -365,6 +363,9 @@ bot.dialog('/interactiveDataEntry',
 [
     function (session, args, next)
     {
+        if (session.conversationData.pinExists == false) {
+            session.replaceDialog('/auth')
+        }
         var forwardInput = session.dialogData.forwardInput;
         var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
 
@@ -577,6 +578,9 @@ bot.dialog('/batchDataEntry',
 [
     function(session, args, next)
     {
+       if (session.conversationData.pinExists == false) {
+            session.replaceDialog('/auth')
+        }
         var userName = session.userData.firstName;
         var defaultTemplate = getConversationTemplate();
         var message = "Below you will find the template I need to record your conversation.\n\n"
@@ -681,10 +685,14 @@ bot.dialog('/fetchConversation',
 [
     function(session, args, next)
     {
+
         // Exit if dialog is called on email channel
         if (session.message.address.channelId == "email")
             session.endDialog();
 
+       if (session.conversationData.pinExists == false) {
+            session.replaceDialog('/auth')
+        }
         if (session.message.text.match(/^conv#/))
         {
             var selection = session.message.text.split(':')[1].trim();
@@ -822,6 +830,9 @@ bot.dialog('/viewDashboard',
 [
    function(session)
    {
+        if (session.conversationData.pinExists == false) {
+            session.replaceDialog('/auth')
+        }
         var dashboardURL = process.env.DashboardUrl;
         if (dashboardURL)
             session.send(`The conversation dashboard is available at: ${dashboardURL}`).endDialog();
@@ -1116,7 +1127,12 @@ bot.dialog('/help', [
 bot.dialog('/home', [
     function (session, args, next)
     {
-        session.replaceDialog('/selectAction');
+        if (session.conversationData.pinExists == false) {
+            session.replaceDialog('/auth')
+        }        
+        else {
+            session.replaceDialog('/selectAction');
+        }
     }
 ]).triggerAction({ matches: /^\/home/i }); 
 
