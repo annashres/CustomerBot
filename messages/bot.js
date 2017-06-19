@@ -52,11 +52,11 @@ if (process.env.DB_SERVER)
     });
 
     //define auth model
-    app_authcode = db_connection.define('app_authcode',{
-        ID:Sequelize.INTEGER,
-        Alias: Sequelize.STRING,
-        Code: Sequelize.STRING
-    });
+    // app_authcode = db_connection.define('app_authcode',{
+    //     ID:Sequelize.INTEGER,
+    //     Alias: Sequelize.STRING,
+    //     Code: Sequelize.STRING
+    // });
 
     db_connection.sync().then(function()
     {
@@ -199,7 +199,7 @@ bot.dialog('/auth',
             query: sqlAuthQuery
         }).then (function (results)
         {
-            if (results == pin) {
+            if (results == session.dialogData.pin) {
                 session.replaceDialog('/firstRun');
             }
             else{
