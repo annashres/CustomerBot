@@ -5,6 +5,7 @@ var botbuilder_azure = require("botbuilder-azure");
 var Sequelize = require('sequelize');
 var Fuse = require('fuse.js');
 var Feedback;
+var app_authcode;
 // var Connection = require('tedious').Connection;
 // var Request = require('tedious').Request;
 // var TYPES = require('tedious').TYPES;
@@ -48,6 +49,13 @@ if (process.env.DB_SERVER)
         Tags: Sequelize.STRING,
         Blockers: Sequelize.STRING,
         ProjectStage: Sequelize.STRING
+    });
+
+    //define auth model
+    app_authcode = db_connection.define('app_authcode',{
+        ID:Sequelize.INTEGER,
+        Alias: Sequelize.STRING,
+        Code: Sequelize.STRING
     });
 
     db_connection.sync().then(function()
@@ -114,13 +122,13 @@ bot.dialog('/', [
                 session.userData.name = userDetails.id
                 session.userData.firstName = userDetails.id.split('@')[0];
                 session.userData.alias = session.userData.firstName;
-                session.beginDialog('/firstRun');
+                session.beginDialog('/auth');
             }
             else if (userDetails.name)
             {
                 session.userData.name = userDetails.name
                 session.userData.firstName = userDetails.name.split(' ')[0];
-                session.beginDialog('/sayHello');
+                session.beginDialog('/auth');
             }
             else
                 session.beginDialog('/sayHello');
@@ -128,7 +136,7 @@ bot.dialog('/', [
         // Send available bot actions if the user has previous experience with the bot       
         else if (session.userData.name)
         {
-            session.beginDialog('/selectAction');   
+            session.beginDialog('/auth');   
         }
     }
 ]);
@@ -160,16 +168,50 @@ bot.dialog('/sayHello',
         else
         {
             session.userData.alias = results.response;
-            session.replaceDialog('/firstRun');
+            session.replaceDialog('/auth');
         }
     },
     function (session, results)
     {
         session.userData.alias = results.response;
-        session.replaceDialog('/firstRun');
+        session.replaceDialog('/auth');
     }
 ]);
 
+bot.dialog('/auth',
+[
+    function (session) {
+        var userName = session.userData.firstName;
+        var signin = new builder.SigninCard(session)
+            .button('Sign-in', 'https://customerauthbot.azurewebsites.net/');  
+        session.send(new builder.Message(session).addAttachment(signin));
+        var prompt = "Please type your six-digit pin or login to receive your pin.";
+        builder.Prompts.text(session, prompt);
+
+    },
+    function (session, results) {
+        session.dialogData.pin = results.response;
+        var email = session.userData.alias
+        email += '@microsoft.com' 
+
+        var sqlAuthQuery = `SELECT Code FROM [dbo].[app_authcodes]  WHERE Alias='${email}'`;
+        dbconnection.execute({
+            query: sqlAuthQuery
+        }).then (function (results)
+        {
+            if (results == pin) {
+                session.replaceDialog('/firstRun');
+            }
+            else{
+                session.send("Your alias and pin do not match");   
+                session.replaceDialog('/auth');
+            }
+        }, function (err)
+        {
+            console.error(`Could not retrieve stored conversations for ${session.dialogData.inputCompany}:`, err);
+        });   
+    }
+]);
 //First run dialog - this dialog is run the first time a user interacts with a bot
 bot.dialog('/firstRun',
 [
