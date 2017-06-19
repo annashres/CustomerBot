@@ -194,12 +194,12 @@ bot.dialog('/auth',
         var email = session.userData.alias
         email += '@microsoft.com' 
 
-        var sqlAuthQuery = `SELECT Code FROM [dbo].[app_authcodes]  WHERE Alias='${email}'`;
+        var sqlAuthQuery = `SELECT TOP 1 Code FROM [dbo].[app_authcodes]  WHERE Alias='${email}'`;
         dbconnection.execute({
             query: sqlAuthQuery
         }).then (function (results)
         {
-            if (results == session.dialogData.pin) {
+            if (results[0].Code == session.dialogData.pin) {
                 session.replaceDialog('/firstRun');
             }
             else{
