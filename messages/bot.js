@@ -968,18 +968,26 @@ bot.dialog('/displayMarkdownConversationCard',
             session.endConversation();
         }
 
-        //if it's numbers check th pin
-        if ((/^[0-9]+$/gm.test(session.message.text)) && (templateComplete(session.conversationData)))
+        else if (/^[\s]*confirm[\s]*/im.test(session.message.text) && session.message.address.channelId !== 'email')
         {
-            session.dialogData.pin = results.message;
+            session.replaceDialog('/confirm');
+        }
+
+        //if it's numbers check the pin
+        else if ((/^[0-9]+$/gm.test(session.message.text)) && (templateComplete(session.conversationData)) && session.message.address.channelId === 'email')
+        {
+            session.dialogData.pin = session.message.text;
+            console.log("This is the pin: ", session.dialogData.pin)
             var email = session.userData.alias
             email += '@microsoft.com' 
+            console.log("This is the email: ", email)
 
             var sqlAuthQuery = `SELECT TOP 1 Code FROM [dbo].[app_authcodes]  WHERE Alias='${email}'`;
             dbconnection.execute({
                 query: sqlAuthQuery
             }).then (function (results)
             {
+                console.log("This is the query result: ", results[0].Code)
                 if (results[0].Code == session.dialogData.pin) {
                     session.conversationData.pinExists = true;
                     session.replaceDialog('/confirm');
@@ -990,7 +998,7 @@ bot.dialog('/displayMarkdownConversationCard',
                 }
             }, function (err)
             {
-                console.error(`Could not retrieve stored conversations for ${session.dialogData.inputCompany}:`, err);
+                console.error(`Could not retrieve authcode for your alias`, err);
             });   
         }
 
