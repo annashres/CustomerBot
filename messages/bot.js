@@ -937,12 +937,23 @@ bot.dialog('/displayMarkdownConversationCard',
         // Confirmation and edit instructions
         if (templateComplete(conversationObject))
         {
-            prompt = `Below you will find the details of your conversation.\n\n`;
-            prompt += "`---`\n\n";
-            prompt += "On email reply with **your pin** (found here https://customerauthbot.azurewebsites.net/) to accept the conversation details below. On Skype reply with **Confirm** \n\n";
-            prompt += "Reply with **Discard** to discard the conversation.\n\n";
-            prompt += "**Edit the details below** and reply if you would like to change any conversation detail below.\n\n";
-            prompt += "`---`\n\n"; 
+
+            if(session.message.address.channelId === 'email') {
+                prompt = `Below you will find the details of your conversation.\n\n`;
+                prompt += "`---`\n\n";
+                prompt += "Reply with **your pin** [found here](https://customerauthbot.azurewebsites.net/) to accept the conversation details below.\n\n";
+                prompt += "Reply with **Discard** to discard the conversation.\n\n";
+                prompt += "**Edit the details below** and reply if you would like to change any conversation detail below.\n\n";
+                prompt += "`---`\n\n";                
+            }
+            else {
+                prompt = `Below you will find the details of your conversation.\n\n`;
+                prompt += "`---`\n\n";
+                prompt += "Reply with **Confirm** to accept the conversation details below.\n\n";
+                prompt += "Reply with **Discard** to discard the conversation.\n\n";
+                prompt += "**Edit the details below** and reply if you would like to change any conversation detail below.\n\n";
+                prompt += "`---`\n\n"; 
+            }
         }
         else
         {
