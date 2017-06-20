@@ -115,7 +115,7 @@ bot.dialog('/', [
                 session.userData.name = userDetails.id
                 session.userData.firstName = userDetails.id.split('@')[0];
                 session.userData.alias = session.userData.firstName;
-                session.beginDialog('/auth');
+                session.beginDialog('/firstRun');
             }
             else if (userDetails.name)
             {
@@ -884,12 +884,12 @@ bot.dialog('/displayConversationCard',
                 session.message.value = null;
                 session.replaceDialog('/displayEditableCard', session.conversationData);
             }
-            else if ((response.message === "confirm") && (templateCompleted))
+            else if ((response.message === "confirm") && (templateCompleted) && session.message.address.channelId !== "email")
             {
-                session.message.value = null;
-                session.replaceDialog('/confirm');                
+                    session.message.value = null;
+                    session.replaceDialog('/confirm');  
             }
-            else if ((response.message === "confirm") && (!templateCompleted))
+            else if ((response.message === "confirm") && (!templateCompleted) && session.message.address.channelId !== "email")
             {
                 session.message.value = null;
                 session.send("Please complete all required sections in the template. Required sections are marked with an asterisk(*).");
@@ -901,6 +901,46 @@ bot.dialog('/displayConversationCard',
                 session.send("Discarding conversation details... Goodbye");
                 session.endConversation();
             }
+
+            //check email
+            else if (session.message.address.channelId === "email" && response.message === "confirm")
+            {
+                session.message.value = null;
+                session.send("Please reply with your pin to confirm. (found here https://customerauthbot.azurewebsites.net/)");
+
+            }
+            else if (session.message.address.channelId === "email" && (response.message !== "discard" || response.message !== "edit" || response.message !== "confirm"))
+            {
+                 if ((templateCompleted)){
+                    session.dialogData.pin = results.message;
+                    var email = session.userData.alias
+                    email += '@microsoft.com' 
+
+                    var sqlAuthQuery = `SELECT TOP 1 Code FROM [dbo].[app_authcodes]  WHERE Alias='${email}'`;
+                    dbconnection.execute({
+                        query: sqlAuthQuery
+                    }).then (function (results)
+                    {
+                        if (results[0].Code == session.dialogData.pin) {
+                            session.conversationData.pinExists = true;
+                            session.replaceDialog('/confirm');
+                        }
+                        else{
+                            session.send("Your alias and pin do not match");   
+                            session.replaceDialog('/auth');
+                        }
+                    }, function (err)
+                    {
+                        console.error(`Could not retrieve stored conversations for ${session.dialogData.inputCompany}:`, err);
+                    });   
+                }
+                else {
+                     session.message.value = null;
+                     session.send("Please complete all required sections in the template. Required sections are marked with an asterisk(*).");
+                     session.replaceDialog('/displayConversationCard', session.conversationData);
+                }
+            }
+
             else
             {
                 session.message.value = null;
@@ -923,7 +963,7 @@ bot.dialog('/displayMarkdownConversationCard',
         {
             prompt = `Below you will find the details of your conversation.\n\n`;
             prompt += "`---`\n\n";
-            prompt += "Reply with **Confirm** to accept the conversation details below.\n\n";
+            prompt += "On email reply with **your pin** (found here https://customerauthbot.azurewebsites.net/) to accept the conversation details below. On Skype reply with **Confirm** \n\n";
             prompt += "Reply with **Discard** to discard the conversation.\n\n";
             prompt += "**Edit the details below** and reply if you would like to change any conversation detail below.\n\n";
             prompt += "`---`\n\n"; 
