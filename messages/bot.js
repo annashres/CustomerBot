@@ -121,15 +121,20 @@ bot.dialog('/', [
             {
                 session.userData.name = userDetails.name
                 session.userData.firstName = userDetails.name.split(' ')[0];
-                session.beginDialog('/auth');
+                session.beginDialog('/sayHello');
             }
             else
                 session.beginDialog('/sayHello');
         }
         // Send available bot actions if the user has previous experience with the bot       
-        else if (session.userData.name)
+        else if (session.userData.name && botChannel != "email")
         {
+            session.userData.previousExperience = true;
             session.beginDialog('/auth');   
+        }
+        else if (session.userData.name && botChannel === "email")
+        {
+            session.beginDialog('/selectAction');   
         }
     }
 ]);
@@ -174,11 +179,6 @@ bot.dialog('/sayHello',
 bot.dialog('/auth',
 [
     function (session, args) {
-        var userName = session.userData.firstName;
-        // var signin = new builder.SigninCard(session)
-        //     .text('Sign-in')
-        //     .button('Click to get your pin', 'https://customerauthbot.azurewebsites.net/');  //make this a link not card 
-        // session.send(new builder.Message(session).addAttachment(signin));
         session.send('[Click to get your pin](https://customerauthbot.azurewebsites.net/)');
         var prompt = "Please type your six-digit pin";
         builder.Prompts.text(session, prompt);
@@ -196,7 +196,15 @@ bot.dialog('/auth',
         {
             if (results[0].Code == session.dialogData.pin) {
                 session.conversationData.pinExists = true;
+               
+               if (session.userData.previousExperience == true)
+               {
+                   session.replaceDialog('/selectAction');
+               }
+               else {
                 session.replaceDialog('/firstRun');
+               }
+
             }
             else{
                 session.send("Your alias and pin do not match");   
