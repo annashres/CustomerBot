@@ -175,10 +175,11 @@ bot.dialog('/auth',
 [
     function (session, args) {
         var userName = session.userData.firstName;
-        var signin = new builder.SigninCard(session)
-            .text('Sign-in')
-            .button('Click to get your pin', 'https://customerauthbot.azurewebsites.net/');  
-        session.send(new builder.Message(session).addAttachment(signin));
+        // var signin = new builder.SigninCard(session)
+        //     .text('Sign-in')
+        //     .button('Click to get your pin', 'https://customerauthbot.azurewebsites.net/');  //make this a link not card 
+        // session.send(new builder.Message(session).addAttachment(signin));
+        session.send('[Click to get your pin](https://customerauthbot.azurewebsites.net/)');
         var prompt = "Please type your six-digit pin";
         builder.Prompts.text(session, prompt);
 
