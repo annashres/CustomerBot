@@ -288,8 +288,8 @@ bot.dialog('/selectAction',
 [
     function(session, args, next)
     {
-        if (session.conversationData.pinExists == false) {
-            session.replaceDialog('/auth')
+        if (session.message.address.channelId != "email" && session.conversationData.pinExists == false) {
+            session.replaceDialog('/auth');
         }
         var userName = session.userData.firstName;
         var message;
@@ -885,12 +885,12 @@ bot.dialog('/displayConversationCard',
                 session.message.value = null;
                 session.replaceDialog('/displayEditableCard', session.conversationData);
             }
-            else if ((response.message === "confirm") && (templateCompleted) && session.message.address.channelId !== "email")
+            else if ((response.message === "confirm") && (templateCompleted))
             {
                     session.message.value = null;
                     session.replaceDialog('/confirm');  
             }
-            else if ((response.message === "confirm") && (!templateCompleted) && session.message.address.channelId !== "email")
+            else if ((response.message === "confirm") && (!templateCompleted))
             {
                 session.message.value = null;
                 session.send("Please complete all required sections in the template. Required sections are marked with an asterisk(*).");
@@ -903,45 +903,12 @@ bot.dialog('/displayConversationCard',
                 session.endConversation();
             }
 
-            //check email
-            else if (session.message.address.channelId === "email" && response.message === "confirm")
+            else if (response.message === "confirm")
             {
                 session.message.value = null;
                 session.send("Please reply with your pin to confirm. (found here https://customerauthbot.azurewebsites.net/)");
 
             }
-            else if (session.message.address.channelId === "email" && (response.message !== "discard" || response.message !== "edit" || response.message !== "confirm"))
-            {
-                 if ((templateCompleted)){
-                    session.dialogData.pin = results.message;
-                    var email = session.userData.alias
-                    email += '@microsoft.com' 
-
-                    var sqlAuthQuery = `SELECT TOP 1 Code FROM [dbo].[app_authcodes]  WHERE Alias='${email}'`;
-                    dbconnection.execute({
-                        query: sqlAuthQuery
-                    }).then (function (results)
-                    {
-                        if (results[0].Code == session.dialogData.pin) {
-                            session.conversationData.pinExists = true;
-                            session.replaceDialog('/confirm');
-                        }
-                        else{
-                            session.send("Your alias and pin do not match");   
-                            session.replaceDialog('/auth');
-                        }
-                    }, function (err)
-                    {
-                        console.error(`Could not retrieve stored conversations for ${session.dialogData.inputCompany}:`, err);
-                    });   
-                }
-                else {
-                     session.message.value = null;
-                     session.send("Please complete all required sections in the template. Required sections are marked with an asterisk(*).");
-                     session.replaceDialog('/displayConversationCard', session.conversationData);
-                }
-            }
-
             else
             {
                 session.message.value = null;
@@ -986,13 +953,40 @@ bot.dialog('/displayMarkdownConversationCard',
     },
     function (session, results)
     {
-        if ((/^[\s]*confirm[\s]*/im.test(session.message.text)) && (templateComplete(session.conversationData)))
-            session.replaceDialog('/confirm');
-        else if (/^[\s]*discard[\s]*/im.test(session.message.text))
+        //if discard
+        if (/^[\s]*discard[\s]*/im.test(session.message.text))
         {
             session.send("Discarding conversation.");
             session.endConversation();
         }
+
+        //if it's numbers check th pin
+        if ((/^[0-9]+$/gm.test(session.message.text)) && (templateComplete(session.conversationData)))
+        {
+            session.dialogData.pin = results.message;
+            var email = session.userData.alias
+            email += '@microsoft.com' 
+
+            var sqlAuthQuery = `SELECT TOP 1 Code FROM [dbo].[app_authcodes]  WHERE Alias='${email}'`;
+            dbconnection.execute({
+                query: sqlAuthQuery
+            }).then (function (results)
+            {
+                if (results[0].Code == session.dialogData.pin) {
+                    session.conversationData.pinExists = true;
+                    session.replaceDialog('/confirm');
+                }
+                else{
+                    session.send("Your alias and pin do not match");   
+                    session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
+                }
+            }, function (err)
+            {
+                console.error(`Could not retrieve stored conversations for ${session.dialogData.inputCompany}:`, err);
+            });   
+        }
+
+        //if else/edit 
         else
             session.replaceDialog('/editConversation', session.message.text);
     }
