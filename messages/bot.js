@@ -89,7 +89,8 @@ if (process.env.DB_SERVER)
     var createEmailTableQuery = `IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='customer_emaildomain' and xtype='U')
     CREATE TABLE customer_emaildomain (
         ms_customer_guid UNIQUEIDENTIFIER NOT NULL,
-        email_domain NVARCHAR(50) NOT NULL
+        email_domain NVARCHAR(50) NOT NULL,
+        CONSTRAINT uemaildomains UNIQUE NONCLUSTERED ( ms_customer_guid, email_domain)
     )`;
 
     dbconnection.execute({
@@ -656,6 +657,7 @@ bot.dialog('/batchParser',
             var msftContacts = "";
             var companyName = "";
             var companyContacts = "";
+            var companyEmailDomain = "";
 
             // Parse out all the email senders into a list
             while (emailMatches != null)
@@ -684,6 +686,7 @@ bot.dialog('/batchParser',
                     {
                         companyContacts = companyContacts + "," + author.name
                         companyName = author.email.split("@")[1].replace(/\.[\w]+/g,'');
+                        companyEmailDomain = author.email.split("@")[1];
                     }
                 }
             }
@@ -702,7 +705,10 @@ bot.dialog('/batchParser',
             //session.conversationData["company"] = companyName;
             session.conversationData["contact"] = companyContacts;
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
-            session.beginDialog('/findCompanyMatches', companyName);
+            if (companyEmailDomain)
+                session.beginDialog('/findCompanyFromEmail', companyEmailDomain);
+            else
+                session.beginDialog('/findCompanyMatches', companyName);
         }
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
@@ -1223,6 +1229,18 @@ bot.dialog('/selectCompany', [
     }    
 ]);
 
+// Fetch company whose email domain matches input email
+bot.dialog('/findCompanyFromEmail', [
+    function (session, args, next)
+    {
+        if (args)
+        {
+            session.dialogData.inputEmailDomain = args;
+            getCompanyFromEmail(session, session.dialogData.inputEmailDomain);
+        }
+    }
+]);
+
 // Fetch companies matching input company in customer database
 bot.dialog('/findCompanyMatches', [
     function (session, args, next)
@@ -1242,6 +1260,26 @@ bot.dialog('/findCompanyMatches', [
 
         session.sendTyping();
         getCompanyMatches(session, session.dialogData.inputCompany);        
+    }
+]);
+
+// Store customer email domain in database for easy retrieval later
+bot.dialog('/storeEmailDomain', [
+    function (session, args, next)
+    {
+        var insertEmailQuery = `INSERT INTO customer_emaildomain VALUES('${session.conversationData.customerGuid}', '${session.conversationData.inputEmailDomain}');`
+
+        dbconnection.execute('feedbackDb',{
+        query: insertEmailQuery        
+        }).then (function (results)
+        {
+            console.log("Saved new customer email domain to database:", session.conversationData.inputEmailDomain);
+            session.endDialog();                
+        }, function (err)
+        {
+            console.log(`Could not save customer email domain to database:`, err);
+            session.endDialog();
+        });  
     }
 ]);
 
@@ -1427,6 +1465,56 @@ function getConversationTemplate()
     conversationTemplate+= "**Notes:** {enter note text here} \n\n";
     conversationTemplate+= "**Summary(optional):** {enter short summary of note here}\n\n";
     return conversationTemplate
+}
+
+function getCompanyFromEmail(session, inputEmailDomain)
+{
+    if (inputEmailDomain)
+    {
+       var companyEmailQuery = `SELECT ms_customer_guid FROM customer_emaildomain WHERE email_domain='${inputEmailDomain.toLowerCase()}'`;
+
+       dbconnection.getPlainContext('feedbackDb')
+        .step ('getCompanyGuid', {
+            query: companyEmailQuery
+        })
+        .step ('getCompanyName', function (execute, data) {
+            var inputGuid = data.getCompanyGuid;
+            var companyGUIDQuery = `SELECT customername from [dbo].[WeeklyCustomerExperienceReportv13] WHERE MSCustomerGuid='${inputGuid}'`;
+
+            execute({
+                query: companyGUIDQuery
+            })
+        })
+        .end( function (results) {
+            var companyGuids = results.getCompanyGuid;
+            var companyNames = results.getCompanyName;
+
+            if (companyGuids.length)
+            {
+                session.conversationData.customerGuid = companyGuids[0].ms_customer_guid;
+                if (companyNames.length)
+                    session.conversationData.company = companyNames[0].customername;
+                else
+                    session.conversationData.company = inputEmailDomain;
+                session.endDialog();
+            }
+            else
+            {
+                session.conversationData.saveCustomerEmail = true;
+                session.conversationData.inputEmailDomain = inputEmailDomain;
+
+                var companyName = inputEmailDomain.split('.')[0];
+                session.replaceDialog('/findCompanyMatches', companyName);
+            }
+
+        })
+        .error (function (err) {
+            console.log("Could not search database for provided company email:", err);
+            session.send("I have encountered an error while searching for the input company. Restarting...");
+            session.endDialog();
+            session.beginDialog('/home');
+        });      
+    }
 }
 
 function getCompanyMatches(session, inputCompany)
