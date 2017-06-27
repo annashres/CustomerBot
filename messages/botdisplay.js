@@ -18,23 +18,39 @@ function initializeConversationObject(inputConversation)
 
     // Initialize empty property values
     if (!conversationObject.contact) 
-        conversationObject["contact"]="{customer contact name}";
+        conversationObject["contact"]="**{customer contact name}**";
     if (!conversationObject.product)
-        conversationObject["product"]="{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}";
-    if (!conversationObject.company)
-        conversationObject["company"]="{company name}";
+        conversationObject["product"]="**{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}**";
     if (!conversationObject.authors)
-        conversationObject["authors"]="{Microsoft alias}";
+        conversationObject["authors"]="**{Microsoft alias}**";
     if (!conversationObject.tags)
         conversationObject["tags"]="{Enter a comma-separated list of tags if any}";
     if (!conversationObject.notes) 
-        conversationObject["notes"]="{enter note text here}";
+        conversationObject["notes"]="**{enter note text here}**";
     if (!conversationObject.summary)
         conversationObject["summary"]="{enter short summary of note here}";
     if (!conversationObject.projectstage)
     	conversationObject["projectstage"]="{Select one of: Pre-POC, POC, Production}";
     if (!conversationObject.blockers)
-    	conversationObject["blockers"]="{Enter a comma-separated list of blockers if any}"
+    	conversationObject["blockers"]="{Enter a comma-separated list of blockers if any}";
+    if ((!conversationObject.company) && (!conversationObject.companymatches))
+        conversationObject["company"]="**{Enter company name}**";
+    else if ((!conversationObject.company) && conversationObject.companymatches)
+    {
+        if (conversationObject.companymatches.length > 0)
+        {
+            var companyPrompt = "**{Found a few matching companies. Select one of the companies below:}**\n\n";
+
+            for (var i = 0; i < conversationObject.companymatches.length; i++)
+            {
+                companyPrompt =  companyPrompt + conversationObject.companymatches[i] + "\n\n";
+            }
+        }
+        else
+            var companyPrompt = "**{No existing companies match the input name. Enter a valid company name}**";
+        
+        conversationObject["company"]= companyPrompt;
+    }    
 
     return conversationObject;
 }
@@ -47,6 +63,8 @@ function renderCard(session, builder, inputConversation, inputActions=null)
     var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>"
     var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
     companyName = companyName.trim();
+    if (companyName.includes("{"))
+        companyName = "Unknown company";
     var header = "Conversation with " + companyName + "\n\n";
 
     if (typeof inputConversation.updatedAt != "undefined")
@@ -145,7 +163,12 @@ function renderEditableCard(session, builder, inputConversation)
 {
 	var conversationObject= initializeConversationObject(inputConversation);
     
-    var header = "Conversation with " + conversationObject.company;
+    var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
+    companyName = companyName.trim();
+    if (companyName.includes("{"))
+        companyName = "Unknown company";
+    
+    var header = "Conversation with " + companyName;
     var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>";
     var vmSelected = (conversationObject.product.match(/VM/i) != null);
     var dbSelected = (conversationObject.product.match(/DB/i) != null);
@@ -340,7 +363,7 @@ function renderEditableCard(session, builder, inputConversation)
                 },
                 {
                     "type": "Action.Submit",
-                    "title": "Submit",
+                    "title": "Confirm edit",
                     "data": {"action": "submit"}
                 }
             ]

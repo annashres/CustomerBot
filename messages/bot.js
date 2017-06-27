@@ -12,49 +12,95 @@ var app_authcode;
 var path = require('path');
 var dbconnection = require("seriate");
 var botdisplay = require('./botdisplay.js');
-
 var useEmulator = (process.env.NODE_ENV == 'development');
 
 //Create connection to database
 if (process.env.DB_SERVER)
 {
-    var db_connection = new Sequelize(process.env.DB_NAME, process.env.DB_ADMIN, process.env.DB_PASSWORD,
-    {
-        dialect: 'mssql',
-        host: process.env.DB_SERVER,
-        port: 1433,
-        logging: false,
+    // var db_connection = new Sequelize(process.env.DB_NAME, process.env.DB_ADMIN, process.env.DB_PASSWORD,
+    // {
+    //     dialect: 'mssql',
+    //     host: process.env.DB_SERVER,
+    //     port: 1433,
+    //     logging: false,
 
-        dialectOptions: {
-            requestTimeout: 30000, //timeout = 30 seconds
-            encrypt: true
-        }
-    });
+    //     dialectOptions: {
+    //         requestTimeout: 30000, //timeout = 30 seconds
+    //         encrypt: true
+    //     }
+    // });
 
     // Check database connection
-    db_connection.authenticate()
-        .then(function(){console.log("Connection to '" + process.env.DB_NAME + "' database has been established successfully.");})
-        .catch(function (err){console.log("Unable to connect to the database:", err);})
-        .done();
+    // db_connection.authenticate()
+    //     .then(function(){console.log("Connection to '" + process.env.DB_NAME + "' database has been established successfully.");})
+    //     .catch(function (err){console.log("Unable to connect to the database:", err);})
+    //     .done();
    
     //Define 'feedback' model
-    Feedback = db_connection.define('feedback',{
-        Name: Sequelize.STRING,
-        Authors: Sequelize.STRING,
-        Company: Sequelize.STRING,
-        Contact: Sequelize.STRING,
-        Product: Sequelize.STRING,
-        Notes: Sequelize.TEXT,
-        Summary: Sequelize.STRING(400),
-        Tags: Sequelize.STRING,
-        Blockers: Sequelize.STRING,
-        ProjectStage: Sequelize.STRING
-    });
+    // Feedback = db_connection.define('feedback',{
+    //     Name: Sequelize.STRING,
+    //     Authors: Sequelize.STRING,
+    //     Company: Sequelize.STRING,
+    //     Contact: Sequelize.STRING,
+    //     Product: Sequelize.STRING,
+    //     Notes: Sequelize.TEXT,
+    //     Summary: Sequelize.STRING(400),
+    //     Tags: Sequelize.STRING,
+    //     Blockers: Sequelize.STRING,
+    //     ProjectStage: Sequelize.STRING
+    // });
 
-    db_connection.sync().then(function()
+    // db_connection.sync().then(function()
+    // {
+    //     console.log("Created database schema from 'feedback' model");
+    // });
+
+    // Create connection to database
+    var config = 
     {
-        console.log("Created database schema from 'feedback' model");
-    });
+        "user": process.env.DB_ADMIN,
+        "password": process.env.DB_PASSWORD,
+        "server": process.env.DB_SERVER,
+        "database": process.env.DB_NAME,
+        "requestTimeout": 300000,
+        "connectionTimeout": 300000,
+        
+        options: {encrypt: true}
+    }
+
+    var feedbackConfig = 
+    {
+        "name": "feedbackDb",
+        "user": process.env.DB_ADMIN,
+        "password": process.env.DB_PASSWORD,
+        "server": process.env.DB_SERVER,
+        "database": process.env.FEEDBACKDB_NAME,
+        "requestTimeout": 300000,
+        "connectionTimeout": 300000,
+
+        options: {encrypt: true}
+    }
+    
+    dbconnection.setDefaultConfig(config);
+    dbconnection.addConnection(feedbackConfig);
+    console.log("Connection pool created for '" + process.env.DB_NAME + "' database.");
+
+    //Initialize email table that is used by the bot
+    var createEmailTableQuery = `IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='customer_emaildomain' and xtype='U')
+    CREATE TABLE customer_emaildomain (
+        ms_customer_guid UNIQUEIDENTIFIER NOT NULL,
+        email_domain NVARCHAR(50) NOT NULL
+    )`;
+
+    dbconnection.execute({
+        query: createEmailTableQuery
+    }).then (function (results)
+        {
+            console.log('Email table initialized');
+        }, function (err)
+        {
+            console.error(`Could not create customer email table`, err);
+        });   
 }
 
 // Create connection to chat bot
@@ -68,19 +114,6 @@ var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure
 // Create chat bot instance
 var bot = new builder.UniversalBot(connector);
 bot.localePath(path.join(__dirname, './locale'));
-
-
-// Create connection to database
-var config = 
-{
-    "user": process.env.DB_ADMIN,
-    "password": process.env.DB_PASSWORD,
-    "server": process.env.DB_SERVER,
-    "database": process.env.DB_NAME,
-
-    options: {encrypt: true}
-}
-dbconnection.setDefaultConfig(config);
 
 // Wake bot up when a user joins the channel
 bot.on('conversationUpdate', function(message)
@@ -372,17 +405,21 @@ bot.dialog('/interactiveDataEntry',
 [
     function (session, args, next)
     {
-        if (session.conversationData.pinExists == false) {
-            session.replaceDialog('/auth')
-        }
-        var forwardInput = session.dialogData.forwardInput;
-        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        session.conversationData.interactiveMode = true;
+        if (session.message.address.channelId != 'email')
+        {
+            if (session.conversationData.pinExists == false) {
+                session.replaceDialog('/auth')
+            }
+            var forwardInput = session.dialogData.forwardInput;
+            var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
 
-        // This forwards the button click for product selection to the appropriate handler
-        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
-            next();
-        else
-            builder.Prompts.text(session, "Enter the Microsoft aliases (separated by commas) of all who were on the call.");
+            // This forwards the button click for product selection to the appropriate handler
+            if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
+                next();
+            else
+                builder.Prompts.text(session, "Enter the Microsoft aliases (separated by commas) of all who were on the call.");
+        }
     },
     function (session, results, next)
     {
@@ -395,7 +432,7 @@ bot.dialog('/interactiveDataEntry',
         else
         {
             session.conversationData.authors = results.response;
-            builder.Prompts.text(session, "And what company did you (all) speak with?");
+            session.beginDialog('/findCompanyMatches');
         }
     },
     function (session, results, next)
@@ -408,8 +445,7 @@ bot.dialog('/interactiveDataEntry',
             next();
         else
         {
-            session.conversationData.company = results.response;
-            builder.Prompts.text(session, "Who did you speak with at " + session.conversationData.company + "?");
+            builder.Prompts.text(session, "Who did you speak with at " + session.conversationData.company + "? (use commas to include multiple people)")
         }
     },
     function (session, results, next)
@@ -663,9 +699,10 @@ bot.dialog('/batchParser',
 
             //Save extracted information into conversation variables
             session.conversationData["authors"] = msftContacts;
-            session.conversationData["company"] = companyName;
+            //session.conversationData["company"] = companyName;
             session.conversationData["contact"] = companyContacts;
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
+            session.beginDialog('/findCompanyMatches', companyName);
         }
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
@@ -678,14 +715,16 @@ bot.dialog('/batchParser',
         {
             session.sendTyping();
             parseConversationTemplate(session, args);
-        }
-
+        }    
+    },
+    function (session, results, next)
+    {
         if (session.conversationData.displayMarkdown)
             session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
         else if (session.message.address.channelId === "emulator")
             session.beginDialog('/displayConversationCard', session.conversationData);
         else
-            session.beginDialog('/displayMarkdownConversationCard', session.conversationData);
+            session.beginDialog('/displayMarkdownConversationCard', session.conversationData);   
     }
 ]);
 
@@ -695,62 +734,61 @@ bot.dialog('/fetchConversation',
     function(session, args, next)
     {
 
-        // Exit if dialog is called on email channel
-        if (session.message.address.channelId == "email")
-            session.endDialog();
-
-       if (session.conversationData.pinExists == false) {
-            session.replaceDialog('/auth')
-        }
-        if (session.message.text.match(/^conv#/))
+        if (session.message.address.channelId != 'email')
         {
-            var selection = session.message.text.split(':')[1].trim();
-            var selectedConversation = session.conversationData.retrievedConversations[selection];
-            var outputCard;
-            var buttonArray;
-
-            if (session.message.address.channelId === "emulator")
-                outputCard = botdisplay.renderCard(session, builder, selectedConversation);
-            else
-                outputCard = botdisplay.renderText("", selectedConversation);
-
-            session.send(outputCard);
-
-            if (session.conversationData.retrievedConversations.length > 1)
+            if (session.conversationData.pinExists == false)
+                session.replaceDialog('/auth')
+        
+            if (session.message.text.match(/^conv#/))
             {
-                buttonArray = [
-                    builder.CardAction.imBack(session, "More Conversations", "More conversations..."),
-                    builder.CardAction.imBack(session, "Return Home", "Return home")
-                ];
+                var selection = session.message.text.split(':')[1].trim();
+                var selectedConversation = session.conversationData.retrievedConversations[selection];
+                var outputCard;
+                var buttonArray;
+
+                if (session.message.address.channelId === "emulator")
+                    outputCard = botdisplay.renderCard(session, builder, selectedConversation);
+                else
+                    outputCard = botdisplay.renderText("", selectedConversation);
+
+                session.send(outputCard);
+
+                if (session.conversationData.retrievedConversations.length > 1)
+                {
+                    buttonArray = [
+                        builder.CardAction.imBack(session, "More Conversations", "More conversations..."),
+                        builder.CardAction.imBack(session, "Return Home", "Return home")
+                    ];
+                }
+                else
+                    buttonArray = [builder.CardAction.imBack(session, "Return Home", "Return home")];
+                
+                var optionButtons = new builder.ThumbnailCard(session)
+                .title("Available actions")
+                .buttons(buttonArray);
+
+                session.send(new builder.Message(session).addAttachment(optionButtons));            
             }
-            else
-                buttonArray = [builder.CardAction.imBack(session, "Return Home", "Return home")];
-            
-            var optionButtons = new builder.ThumbnailCard(session)
-            .title("Available actions")
-            .buttons(buttonArray);
+            else if (session.message.text.match(/^more conversations/i))
+            {
+                var conversations = botdisplay.renderSummaryCard(session, builder, session.conversationData.retrievedConversations);
 
-            session.send(new builder.Message(session).addAttachment(optionButtons));            
-        }
-        else if (session.message.text.match(/^more conversations/i))
-        {
-            var conversations = botdisplay.renderSummaryCard(session, builder, session.conversationData.retrievedConversations);
+                var outputCards = new builder.Message(session)
+                    .attachmentLayout(builder.AttachmentLayout.carousel)
+                    .attachments(conversations);
 
-            var outputCards = new builder.Message(session)
-                .attachmentLayout(builder.AttachmentLayout.carousel)
-                .attachments(conversations);
-
-            session.send(outputCards);
-        }
-        else if (session.message.text.match(/^return home/i))
-        {
-            session.conversationData.retrievedConversations = null;
-            session.replaceDialog('/selectAction');
-        }
-        else if (process.env.DB_SERVER)
-            builder.Prompts.text(session, "Which company would you like to retrieve conversations for?");
-        else if (!process.env.DB_SERVER)
-            session.endDialog("This function is not available. I have not been hooked up to a database of previous conversations.");
+                session.send(outputCards);
+            }
+            else if (session.message.text.match(/^return home/i))
+            {
+                session.conversationData.retrievedConversations = null;
+                session.replaceDialog('/selectAction');
+            }
+            else if (process.env.DB_SERVER)
+                builder.Prompts.text(session, "Which company would you like to retrieve conversations for?");
+            else if (!process.env.DB_SERVER)
+                session.endDialog("This function is not available. I have not been hooked up to a database of previous conversations.");   
+        }      
     },
     function (session, results, next)
     {
@@ -837,16 +875,19 @@ bot.dialog('/fetchConversation',
 // Launch PowerBI dashboard Url
 bot.dialog('/viewDashboard',
 [
-   function(session)
-   {
-        if (session.conversationData.pinExists == false) {
-            session.replaceDialog('/auth')
+    function(session)
+    {
+        if (session.message.address.channelId != 'email')
+        {
+            if (session.conversationData.pinExists == false)
+                session.replaceDialog('/auth')
+        
+            var dashboardURL = process.env.DashboardUrl;
+            if (dashboardURL)
+                session.send(`The conversation dashboard is available at: ${dashboardURL}`).endDialog();
+            else
+                session.send(`Oh no! Looks like I wasn't configured with the location of the conversation dashboard.`).endDialog();
         }
-        var dashboardURL = process.env.DashboardUrl;
-        if (dashboardURL)
-            session.send(`The conversation dashboard is available at: ${dashboardURL}`).endDialog();
-        else
-            session.send(`Oh no! Looks like I wasn't configured with the location of the conversation dashboard.`).endDialog();
     }
 ]).triggerAction({ matches: /^Dashboard$/i });
 
@@ -855,7 +896,7 @@ bot.dialog('/displayConversationCard',
 [
     function(session, args, next)
     {
-        var availableActions = [
+        var allActionsAvailable = [
             {
                 "type": "Action.Submit",
                 "title": "Discard conversation",
@@ -871,11 +912,30 @@ bot.dialog('/displayConversationCard',
                 "title": "Confirm",
                 "data": { "message" : "confirm"}  
             }
-        ]   
+        ];
+
+        var submitDisabled = [
+            {
+                "type": "Action.Submit",
+                "title": "Discard conversation",
+                "data": {"message": "discard"}
+            },
+            {
+                "type": "Action.Submit",
+                "title": "Edit conversation",
+                "data": {"message": "edit"}
+            }
+        ];   
         
         if (!session.message.value)
         {
-            var outputCard = botdisplay.renderCard(session, builder, args, availableActions);
+            var templateCompleted = templateComplete(session.conversationData);
+            var outputCard;
+
+            if (templateCompleted)
+                outputCard = botdisplay.renderCard(session, builder, args, allActionsAvailable);
+            else
+                outputCard = botdisplay.renderCard(session, builder, args, submitDisabled);
             session.send(outputCard);
         }
         
@@ -1046,7 +1106,7 @@ bot.dialog('/displayEditableCard',
              {
                 var selectedProducts="";
                 session.conversationData.contact = session.message.value.contact;
-                session.conversationData.company = session.message.value.company;
+                //session.conversationData.company = session.message.value.company;
                 session.conversationData.authors = session.message.value.authors;
                 session.conversationData.tags = session.message.value.tags;
                 session.conversationData.notes = session.message.value.notes;
@@ -1069,14 +1129,28 @@ bot.dialog('/displayEditableCard',
                 selectedProducts = selectedProducts.replace(/,$/g, "");
                 session.conversationData.product = selectedProducts;
 
-                session.message.value = null;
-
-                if (session.conversationData.displayMarkdown)
-                    session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
-                else if (session.message.address.channelId === "emulator")
-                    session.replaceDialog('/displayConversationCard', session.conversationData);
+                if ((typeof session.conversationData.companyMatches != "undefined") && (!session.conversationData.customerGuid) && (session.conversationData.companyMatches.includes(session.message.value.company)))
+                {
+                    var companyIndex = session.conversationData.companyMatches.indexOf(session.message.value.company);
+                    session.conversationData.company = session.conversationData.companyMatches[companyIndex];
+                    session.message.value = null;
+                    session.beginDialog('/selectCompany');
+                }
+                else if (!session.conversationData.customerGuid)
+                {
+                    session.beginDialog('/findCompanyMatches', session.message.value.company);   
+                    session.message.value = null;
+                }
+                else if (session.conversationData.company != session.message.value.company)
+                {
+                    session.beginDialog('/findCompanyMatches', session.message.value.company);
+                    session.message.value = null;
+                }
                 else
-                    session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
+                {
+                    session.message.value = null;
+                    next();             
+                }
              }
              else
              {
@@ -1086,6 +1160,15 @@ bot.dialog('/displayEditableCard',
              }
 
         }
+    },
+    function(session, results, next)
+    {
+        if (session.conversationData.displayMarkdown)
+            session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
+        else if (session.message.address.channelId === "emulator")
+            session.replaceDialog('/displayConversationCard', session.conversationData);
+        else
+            session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);   
     }
 ]);
 
@@ -1107,6 +1190,58 @@ bot.dialog('/editConversation', [
         }
         else
             session.replaceDialog('/batchParser', args);
+    }
+]);
+
+// Select company name from list of suggested matches
+bot.dialog('/selectCompany', [
+    function (session, args, next)
+    {
+        if (session.conversationData.company)
+            next();
+        else 
+        {
+            session.dialogData.inputCompanies = args;
+            session.send(`I found a few companies that match your input company`);
+            var prompt = "Please select one company from the choices below:\n\n";
+            builder.Prompts.choice(session, prompt, args);
+        }
+    },
+    function (session, results, next)
+    {
+        if (results.response)
+        {
+            session.conversationData.company = results.response.entity;
+            getCompanyGUID(session, session.conversationData.company);
+        }
+        else if (session.conversationData.company && (!session.conversationData.customerGuid))
+            getCompanyGUID(session, session.conversationData.company);
+        else if (session.conversationData.company && session.conversationData.customerGuid)
+            session.endDialog();
+        else
+            session.replaceDialog('/selectCompany', session.dialogData.inputCompanies)
+    }    
+]);
+
+// Fetch companies matching input company in customer database
+bot.dialog('/findCompanyMatches', [
+    function (session, args, next)
+    {
+        if (args)
+        {
+            session.dialogData.inputCompany = args;
+            next();
+        }
+        else 
+            builder.Prompts.text(session, "What company did you (all) speak with?");
+    },
+    function (session, results, next)
+    {
+        if (results.response && (!session.dialogData.inputCompany))
+            session.dialogData.inputCompany = results.response;
+
+        session.sendTyping();
+        getCompanyMatches(session, session.dialogData.inputCompany);        
     }
 ]);
 
@@ -1140,24 +1275,25 @@ bot.dialog('/confirm', [
             if (session.conversationData.projectstage == "{Select one of: Pre-POC, POC, Production}")
                 session.conversationData.projectstage = null;
 
-            Feedback.create({
-                Name: session.userData.alias,
-                Authors: session.conversationData.authors,
-                Company: session.conversationData.company,
-                Contact: session.conversationData.contact,
-                Product: session.conversationData.product,
-                Notes: session.conversationData.notes,
-                Summary: session.conversationData.summary,
-                Tags: session.conversationData.tags,
-                Blockers: session.conversationData.blockers,
-                ProjectStage: session.conversationData.projectstage
-            }).then(feedback => {console.log(feedback.get({plain: true}))});
+            storeConversation(session, session.conversationData);
+            // Feedback.create({
+            //     Name: session.userData.alias,
+            //     Authors: session.conversationData.authors,
+            //     Company: session.conversationData.company,
+            //     Contact: session.conversationData.contact,
+            //     Product: session.conversationData.product,
+            //     Notes: session.conversationData.notes,
+            //     Summary: session.conversationData.summary,
+            //     Tags: session.conversationData.tags,
+            //     Blockers: session.conversationData.blockers,
+            //     ProjectStage: session.conversationData.projectstage
+            // }).then(feedback => {console.log(feedback.get({plain: true}))});
                 //db_connection.close();
             
         }
 
-        session.send("Your conversation has been recorded.")
-        session.endConversation();
+        //session.send("Your conversation has been recorded.")
+        //session.endConversation();
     }
 ]);
 
@@ -1209,6 +1345,18 @@ bot.dialog('/reset', [
         session.replaceDialog('/');
     }
 ]).triggerAction({ matches: /^\/reset/i });
+
+// Konami dialog
+bot.dialog('/konami', [
+    function (session, args, next)
+    {
+        var message = "I see you've found the hidden feature.\n\n";
+        message += `Congratulations ${session.userData.firstName} 💩`;
+
+        session.send(message);
+        session.replaceDialog('/home');
+    }
+]).triggerAction({ matches: /^UUDDLRLRBA/i});
 
 // Check if text is email
 function isEmail(inputText)
@@ -1281,6 +1429,90 @@ function getConversationTemplate()
     return conversationTemplate
 }
 
+function getCompanyMatches(session, inputCompany)
+{
+    // Find input company in feedback database
+    var sqlCompanyQuery = "SELECT DISTINCT customername from [dbo].[WeeklyCustomerExperienceReportv13];";
+
+    dbconnection.execute('feedbackDb',{
+        query: sqlCompanyQuery
+    }).then (function (results)
+    {
+        var companies = results
+        var searchOptions = 
+        {
+            shouldSort: true,
+            includeMatches: true,
+            minMatchCharLength: 1,
+            keys: ["customername"],
+            threshold: 0.19,
+            distance: 10
+        }
+        var fuse = new Fuse(companies, searchOptions);
+
+        // Search database for input company name and companies with matching names
+        var result = fuse.search(inputCompany);
+        var matches = result.map(function (entry) {return entry.item.customername;});
+
+        if (session.conversationData.interactiveMode)
+        {
+            if (matches.length == 0)
+            {
+                session.send(`Hmmm. I can't appear to find '${inputCompany}' in the customer database. Please refine your search or try another company.`);
+                session.replaceDialog('/findCompanyMatches');
+            }    
+            else if (matches.length > 1)
+            {
+                session.beginDialog('/selectCompany', matches.slice(0,20));            
+            }
+            else if (matches.length == 1)
+            {
+                session.conversationData.company = matches[0];
+                session.beginDialog('/selectCompany', matches);
+            }
+        }
+        else if (matches.length == 1)
+        {
+            session.conversationData.company = matches[0];
+            getCompanyGUID(session, session.conversationData.company);
+        }
+        else
+        {
+            console.log("matches:", matches);   
+            session.conversationData["companyMatches"] = matches.slice(0,10);  
+            session.endDialog();       
+        }
+    }, function (err)
+    {
+        console.log("Could not search database for provided company name:", err);
+        session.send("I have encountered an error while searching for the company with that name. Restarting...");
+        session.endDialog();
+        session.beginDialog('/home');
+    });
+}
+
+// Fetch GUID for input company
+function getCompanyGUID(session, inputCompany)
+{
+    //Find customer GUID for input company
+    var companyGUIDQuery = `SELECT TOP 1 MSCustomerGuid FROM [dbo].[WeeklyCustomerExperienceReportv13] where CustomerName LIKE '%${inputCompany}%' ORDER BY LEN(Search) DESC;`
+
+    dbconnection.execute('feedbackDb',{
+        query: companyGUIDQuery
+    }).then (function (results)
+    {
+        var companyGUID = results[0].MSCustomerGuid;
+        session.conversationData.customerGuid = companyGUID;
+        session.endDialog();
+    }, function (err)
+    {
+        console.log(`Could not fetch customer GUID for '${inputCompany}':`, err);
+        session.send("I have encountered an error while searching for the ID for the provided customer name. Restarting...");
+        session.endDialog();
+        session.beginDialog('/home');
+    });
+}
+
 //Parse conversation template into session variable
 function parseConversationTemplate(session, inputText)
 {
@@ -1298,6 +1530,7 @@ function parseConversationTemplate(session, inputText)
     templateTokens = templateTokens.split(conversationTemplateRegex);
     console.log('tokens:',templateTokens);
     var endToken = templateTokens.length -1;
+    var inputCompany;
 
     for (var token=0; token<templateTokens.length; token++)
     {
@@ -1327,9 +1560,9 @@ function parseConversationTemplate(session, inputText)
             // Ignore input if it's default text
             if (templateTokens[token+1].search(/{company name}/i) == -1)
             {
-                var inputCompany = templateTokens[token+1];
+                inputCompany = templateTokens[token+1];
                 inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
-                session.conversationData["company"] = inputCompany;
+                //session.conversationData["company"] = inputCompany;
             }
         }
         else if ((token != endToken) && (templateTokens[token].search(/contact[(s)*]*?:/i) != -1))
@@ -1407,9 +1640,159 @@ function parseConversationTemplate(session, inputText)
             }
         }
     }
+
+    // Get matches for input company if a company hasn't been selected already
+    if ((typeof session.conversationData.companyMatches != "undefined") && (!session.conversationData.customerGuid) && (session.conversationData.companyMatches.includes(inputCompany)))
+    {
+        var companyIndex = session.conversationData.companyMatches.indexOf(inputCompany);
+        session.conversationData.company = session.conversationData.companyMatches[companyIndex];
+        session.beginDialog('/selectCompany');
+    }
+    else if (!session.conversationData.customerGuid)
+        session.beginDialog('/findCompanyMatches', inputCompany);
+    else if (session.conversationData.company != inputCompany)
+        session.beginDialog('/findCompanyMatches', inputCompany);    
 }
 
+//Write data to database
+function storeConversation(session,inputConversation)
+{
+    // Convert authors list to json format
+    var authorsList = [];
+    var tokens = inputConversation.authors.split(',');
+    for (var i = 0; i < tokens.length; i++)
+    {
+        authorsList.push({"alias": tokens[i]});
+    }
+    if (authorsList.length > 0)
+        authorsList =  "N'" + JSON.stringify(authorsList) + "'";
+    else
+        authorsList = null;
 
+    // Convert customer contacts to json format
+    var contactsList = [];
+    tokens = inputConversation.contact.split(',');
+    for (var i = 0; i < tokens.length; i++)
+    {
+        var fullname = tokens[i];
+        var firstname, lastname;
+
+        if (fullname.match(' '))
+        {
+            firstname = fullname.substr(0, fullname.indexOf(' '));
+            lastname = fullname.substr(fullname.indexOf(' ')).trim();
+        }
+        else
+        {
+            firstname = fullname;
+            lastname = '';
+        }
+
+        contactsList.push({"first_name": firstname, "last_name": lastname});
+    }
+    if (contactsList.length > 0)
+        contactsList = "N'" + JSON.stringify(contactsList) + "'";
+    else
+        contactsList = null;
+
+    // Create service ID integer for products discussed during conversation
+    var serviceId = 0;
+    if (inputConversation.product.match(/DB/i))
+        serviceId|=1 << 0   //Turn on bit at position 0 for SQL DB
+    if (inputConversation.product.match(/DW/i))
+        serviceId|=1 << 1   //Turn on bit at position 1 for SQL DW
+    if (inputConversation.product.match(/VM/i))
+        serviceId|=1 << 2   //Turn on bit at position 2 for SQL VM
+    if (inputConversation.product.match(/pool/i))
+        serviceId|=1 << 3   //Turn on bit at position 3 for Elastic pool
+    if (inputConversation.product.match(/prem/i))
+        serviceId|=1 << 4   //Turn on bit at position 4 for On-prem SQL Server
+    if (inputConversation.product.match(/other/i))
+        serviceId|=1 << 5   //Turn on bit at position 5 for Other
+
+    // Convert all tags to json format
+    var convTags = [];
+    if (inputConversation.blockers)
+    {
+        tokens = inputConversation.blockers.split(',');
+
+        for (var i=0; i < tokens.length; i++)
+        {
+            convTags.push({"tag_type": "Blocker", "tag_value": tokens[i]});
+        }
+    }
+
+    // Convert projectstage tags to json format
+    if (inputConversation.projectstage)
+    {
+        tokens = inputConversation.projectstage.split(',');
+        for (var i=0; i < tokens.length; i++)
+        {
+            convTags.push({"tag_type": "Project Stage", "tag_value": tokens[i]});
+        }
+    }
+
+    // Convert search tags to json format
+    if (inputConversation.tags)
+    {
+        tokens = inputConversation.tags.split(',');
+        for (var i=0; i < tokens.length; i++)
+        {
+            convTags.push({"tag_type": "Search", "tag_value": tokens[i]});
+        }
+    }
+    if (convTags.length > 0)
+        convTags = "N'" + JSON.stringify(convTags) + "'";
+    else
+        convTags = null;
+
+    // Initialize variables that will be written to conversation table
+    var creator_alias, customerGuid, convNotes, convSummary;
+    creator_alias = customerGuid = convNotes = convSummary = null;
+
+    if (session.userData.alias)
+        creator_alias = JSON.stringify(session.userData.alias);
+    if (inputConversation.customerGuid)
+        customerGuid = JSON.stringify(inputConversation.customerGuid);
+    if (inputConversation.notes)
+        convNotes = "N'" + inputConversation.notes.replace(/'/g,"''") + "'";
+    if (inputConversation.summary)
+        convSummary = "N'" + inputConversation.summary.replace(/'/g,"''") + "'";
+
+    var insertConversationQuery = `EXEC dbo.usp_insert_conversation_from_bot @user=${creator_alias}, @authors=${authorsList}, @ms_customer_guid=${customerGuid}, 
+        @service_discussed = ${serviceId}, @notes=${convNotes}, @summary=${convSummary}, @customer_contacts=${contactsList}, @tags=${convTags}`;
+
+    dbconnection.execute('feedbackDb',{
+        query: insertConversationQuery        
+    }).then (function (results)
+    {
+        var conversationId = results[0].conversationId;
+        customerGuid = customerGuid.replace(/"/g,'');        
+        var companyName = encodeURIComponent(inputConversation.company.trim());
+        var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}/conversation/${conversationId}`;
+        var signoffMessages = [`*Alone we can do so little, together we can do so much.* -Helen Keller`, 
+        `*In teamwork, silence isn’t golden. It’s deadly.* -Mark Sanborn`,
+        `*A single leaf working alone provides no shade.* -Chuck Page`, 
+        `*If I have seen further than others, it is by standing upon the shoulders of giants.* -Isaac Newton`,
+        `*A successful team is a group of many hands but of one mind* -Bill Bethel`];
+
+        var message = "I have saved your conversation to the archive.\n\n";
+        message += `You can [view or edit conversations using my web interface](${webLink}).\n\n`
+        message+= "`---`\n\n 💡 ";
+        message += signoffMessages[Math.floor(Math.random()*signoffMessages.length)];
+        
+        session.send(message);
+        session.endConversation();                
+    }, function (err)
+    {
+        console.log(`Could not save conversation to database:`, err);
+        session.send("I ran into an error while saving your conversation.");
+        if (session.message.address.channelId != 'emulator')
+            session.replaceDialog('/displayMarkdownConversationCard', session.conversationData);
+        else
+            session.replaceDialog('/displayConversationCard', session.conversationData);
+    });  
+}
 
 module.exports = { 
     connector: connector,
