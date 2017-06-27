@@ -426,6 +426,11 @@ function renderText(prompt="", inputConversation)
     // Conversation details
     var companyName = conversationObject.company.replace(/(?:\r\n|\r|\n)/g, '');
     companyName = companyName.trim();
+
+    if (companyName.includes("{"))
+        companyName = "Unknown company";
+    
+    var header = "Conversation with " + companyName + "\n\n";
     outputMessage += `**Conversation with ${companyName}**\n\n`;
 
     // Add recorded date if conversation was previously saved
