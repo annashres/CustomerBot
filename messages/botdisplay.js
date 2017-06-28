@@ -170,12 +170,23 @@ function renderEditableCard(session, builder, inputConversation)
     
     var header = "Conversation with " + companyName;
     var audioSummary = "<s>You had a meeting with <break strength='weak'/> " + conversationObject.contact + " today where you discussed about how " + conversationObject.product + " is used at " + conversationObject.company + "</s><voice gender = \"female\"></voice>";
-    var vmSelected = (conversationObject.product.match(/VM/i) != null);
-    var dbSelected = (conversationObject.product.match(/DB/i) != null);
-    var dwSelected = (conversationObject.product.match(/DW/i) != null);
-    var poolSelected = (conversationObject.product.match(/pool/i) != null);
-    var onPremSelected = (conversationObject.product.match(/on-prem/i) != null);
-    var otherSelected = (conversationObject.product.match(/other/i) != null);
+    var vmSelected, dbSelected, dwSelected, poolSelected, onPremSelected, otherSelected;
+    var productPrompt = (conversationObject.product.match(/[{}]/i) != null);
+
+    if (productPrompt)
+    {
+        vmSelected = dbSelected = dwSelected = poolSelected = onPremSelected = otherSelected = false;
+    }
+    else
+    {
+        vmSelected = (conversationObject.product.match(/VM/i) != null);
+        dbSelected = (conversationObject.product.match(/DB/i) != null);
+        dwSelected = (conversationObject.product.match(/DW/i) != null);
+        poolSelected = (conversationObject.product.match(/pool/i) != null);
+        onPremSelected = (conversationObject.product.match(/on-prem/i) != null);
+        otherSelected = (conversationObject.product.match(/other/i) != null);
+    }
+    
     var prePOCSelected = (conversationObject.projectstage.match(/pre-poc/i) != null);
     var POCSelected = (conversationObject.projectstage.match(/poc/i) != null);
     var productionSelected = (conversationObject.projectstage.match(/production/i) != null);

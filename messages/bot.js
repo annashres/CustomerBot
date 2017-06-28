@@ -1320,6 +1320,8 @@ bot.dialog('/confirm', [
             if (session.conversationData.projectstage == "{Select one of: Pre-POC, POC, Production}")
                 session.conversationData.projectstage = null;
 
+            if (session.conversationData.saveCustomerEmail)
+                session.beginDialog('/storeEmailDomain');
             storeConversation(session, session.conversationData);
             // Feedback.create({
             //     Name: session.userData.alias,
@@ -1335,10 +1337,7 @@ bot.dialog('/confirm', [
             // }).then(feedback => {console.log(feedback.get({plain: true}))});
                 //db_connection.close();
             
-        }
-
-        //session.send("Your conversation has been recorded.")
-        //session.endConversation();
+        }        
     }
 ]);
 
