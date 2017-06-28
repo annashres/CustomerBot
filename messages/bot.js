@@ -1872,7 +1872,8 @@ function storeConversation(session,inputConversation)
         var conversationId = results[0].conversationId;
         customerGuid = customerGuid.replace(/"/g,'');        
         var companyName = encodeURIComponent(inputConversation.company.trim());
-        var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}/conversation/${conversationId}`;
+        //var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}/conversation/${conversationId}`;
+        var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}`;
         var signoffMessages = [`*Alone we can do so little, together we can do so much.* -Helen Keller`, 
         `*In teamwork, silence isn’t golden. It’s deadly.* -Mark Sanborn`,
         `*A single leaf working alone provides no shade.* -Chuck Page`, 
