@@ -71,16 +71,16 @@ if (process.env.DB_SERVER)
     var feedbackConfig = 
     {
         "name": "feedbackDb",
-        "user": process.env.DB_ADMIN,
-        "password": process.env.DB_PASSWORD,
-        "server": process.env.DB_SERVER,
+        "user": process.env.FEEDBACKDB_ADMIN,
+        "password": process.env.FEEDBACKDB_PASSWORD,
+        "server": process.env.FEEDBACKDB_SERVER,
         "database": process.env.FEEDBACKDB_NAME,
         "requestTimeout": 300000,
         "connectionTimeout": 300000,
 
         options: {encrypt: true}
     }
-    
+
     dbconnection.setDefaultConfig(config);
     dbconnection.addConnection(feedbackConfig);
     console.log("Connection pool created for '" + process.env.DB_NAME + "' database.");
@@ -93,7 +93,7 @@ if (process.env.DB_SERVER)
         CONSTRAINT uemaildomains UNIQUE NONCLUSTERED ( ms_customer_guid, email_domain)
     )`;
 
-    dbconnection.execute({
+    dbconnection.execute('feedbackDb',{
         query: createEmailTableQuery
     }).then (function (results)
         {
@@ -1104,7 +1104,7 @@ bot.dialog('/displayEditableCard',
         
         next();
     },
-    function(session, results)
+    function(session, results, next)
     {
         if (session.message.value)
         {
@@ -1777,7 +1777,7 @@ function storeConversation(session,inputConversation)
     tokens = inputConversation.contact.split(',');
     for (var i = 0; i < tokens.length; i++)
     {
-        var fullname = tokens[i];
+        var fullname = tokens[i].trim();
         var firstname, lastname;
 
         if (fullname.match(' '))
@@ -1872,8 +1872,7 @@ function storeConversation(session,inputConversation)
         var conversationId = results[0].conversationId;
         customerGuid = customerGuid.replace(/"/g,'');        
         var companyName = encodeURIComponent(inputConversation.company.trim());
-        //var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}/conversation/${conversationId}`;
-        var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}`;
+        var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}/conversation/${conversationId}`;
         var signoffMessages = [`*Alone we can do so little, together we can do so much.* -Helen Keller`, 
         `*In teamwork, silence isn’t golden. It’s deadly.* -Mark Sanborn`,
         `*A single leaf working alone provides no shade.* -Chuck Page`, 
@@ -1881,7 +1880,7 @@ function storeConversation(session,inputConversation)
         `*A successful team is a group of many hands but of one mind* -Bill Bethel`];
 
         var message = "I have saved your conversation to the archive.\n\n";
-        message += `You can [view or edit conversations using my web interface](${webLink}).\n\n`
+        message += `You can [view or edit the conversation using my web interface](${webLink}).\n\n`
         message+= "`---`\n\n 💡 ";
         message += signoffMessages[Math.floor(Math.random()*signoffMessages.length)];
         
