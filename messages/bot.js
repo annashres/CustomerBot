@@ -1051,9 +1051,15 @@ bot.dialog('/displayMarkdownConversationCard',
         }
 
         //if it's numbers check the pin
-        else if ((/^[0-9]+$/gm.test(session.message.text)) && (templateComplete(session.conversationData)) && session.message.address.channelId === 'email')
+        else if ((/^[\s]*[0-9]+/gm.test(session.message.text)) && (templateComplete(session.conversationData)) && session.message.address.channelId === 'email')
         {
-            session.dialogData.pin = session.message.text;
+            
+            var confirmationPinRegex = /^[\s]*([0-9]+)/g
+            var pinMatches = confirmationPinRegex.exec(session.message.text);
+            
+            if (pinMatches != null)
+                session.dialogData.pin = pinMatches[1];
+            
             console.log("This is the pin: ", session.dialogData.pin)
             var email = session.userData.alias
             email += '@microsoft.com' 
@@ -1248,7 +1254,7 @@ bot.dialog('/findCompanyMatches', [
         if (args)
         {
             session.dialogData.inputCompany = args.trim();
-            session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[/r/n]+/g,'');
+            session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[\r\n]+/g,'');
             next();
         }
         else 
