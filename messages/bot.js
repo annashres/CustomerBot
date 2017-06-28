@@ -1484,10 +1484,16 @@ function getCompanyFromEmail(session, inputEmailDomain)
             query: companyEmailQuery
         })
         .step ('getCompanyName', function (execute, data) {
-            var inputGuid = data.getCompanyGuid;
-            var companyGUIDQuery = `SELECT DISTINCT customerName from [dbo].[WeeklyCustomerExperienceReportv13] WHERE MSCustomerGuid='${inputGuid}'`;
-            console.log(companyGUIDQuery);
+            var companyGUIDQuery;
 
+            if (data.getCompanyGuid.length)
+            {
+                var inputGuid = data.getCompanyGuid[0].ms_customer_guid;
+                companyGUIDQuery = `SELECT DISTINCT customerName from [dbo].[WeeklyCustomerExperienceReportv13] WHERE MSCustomerGuid='${inputGuid}'`;
+            }
+            else
+                companyGUIDQuery = `SELECT 'Unknown Company'`
+            
             execute({
                 query: companyGUIDQuery
             })

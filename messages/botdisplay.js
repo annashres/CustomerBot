@@ -18,23 +18,23 @@ function initializeConversationObject(inputConversation)
 
     // Initialize empty property values
     if (!conversationObject.contact) 
-        conversationObject["contact"]="**{customer contact name}**";
+        conversationObject["contact"]="**{Enter a customer contact name}**";
     if (!conversationObject.product)
-        conversationObject["product"]="**{SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}**";
+        conversationObject["product"]="**{Select from: SQL VM, SQL DB, SQL DW, Elastic pool, On-Prem SQL Server, Other}**";
     if (!conversationObject.authors)
-        conversationObject["authors"]="**{Microsoft alias}**";
+        conversationObject["authors"]="**{Enter a Microsoft alias}**";
     if (!conversationObject.tags)
         conversationObject["tags"]="{Enter a comma-separated list of tags if any}";
     if (!conversationObject.notes) 
-        conversationObject["notes"]="**{enter note text here}**";
+        conversationObject["notes"]="**{Enter note text here}**";
     if (!conversationObject.summary)
-        conversationObject["summary"]="{enter short summary of note here}";
+        conversationObject["summary"]="{Enter short summary of note here}";
     if (!conversationObject.projectstage)
     	conversationObject["projectstage"]="{Select one of: Pre-POC, POC, Production}";
     if (!conversationObject.blockers)
     	conversationObject["blockers"]="{Enter a comma-separated list of blockers if any}";
     if ((!conversationObject.company) && (!conversationObject.companymatches))
-        conversationObject["company"]="**{Enter company name}**";
+        conversationObject["company"]="**{Enter company name here}**";
     else if ((!conversationObject.company) && conversationObject.companymatches)
     {
         if (conversationObject.companymatches.length > 0)
