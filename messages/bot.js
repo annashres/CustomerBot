@@ -1485,7 +1485,8 @@ function getCompanyFromEmail(session, inputEmailDomain)
         })
         .step ('getCompanyName', function (execute, data) {
             var inputGuid = data.getCompanyGuid;
-            var companyGUIDQuery = `SELECT customername from [dbo].[WeeklyCustomerExperienceReportv13] WHERE MSCustomerGuid='${inputGuid}'`;
+            var companyGUIDQuery = `SELECT DISTINCT customerName from [dbo].[WeeklyCustomerExperienceReportv13] WHERE MSCustomerGuid='${inputGuid}'`;
+            console.log(companyGUIDQuery);
 
             execute({
                 query: companyGUIDQuery
@@ -1745,7 +1746,9 @@ function parseConversationTemplate(session, inputText)
     else if (!session.conversationData.customerGuid)
         session.beginDialog('/findCompanyMatches', inputCompany);
     else if (session.conversationData.company != inputCompany)
-        session.beginDialog('/findCompanyMatches', inputCompany);    
+        session.beginDialog('/findCompanyMatches', inputCompany); 
+    else
+        session.beginDialog('/selectCompany');   
 }
 
 //Write data to database
