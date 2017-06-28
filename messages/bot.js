@@ -1247,7 +1247,8 @@ bot.dialog('/findCompanyMatches', [
     {
         if (args)
         {
-            session.dialogData.inputCompany = args;
+            session.dialogData.inputCompany = args.trim();
+            session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[/r/n]+/g,'');
             next();
         }
         else 
