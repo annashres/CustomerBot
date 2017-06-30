@@ -388,33 +388,35 @@ function renderSummaryCard(session, builder, inputConversations)
 {
 	var outputCards = [];
 
-	//Store input conversations in session variable for retrieval later
+    //Store input conversations in session variable for retrieval later
 	session.conversationData.retrievedConversations = inputConversations;
 
 	for (var conversation = 0; conversation<inputConversations.length; conversation++)
 	{
 		var currConversation = inputConversations[conversation];
-		var title = `Conversation with ${currConversation.Company}`;
+		var title = `Conversation with ${currConversation.company}`;
 		var recordedDate = new Date(Date.parse(currConversation.updatedAt)).toString();
 		var subtitle = `Recorded on: ${recordedDate}`;
 		var cardText;
 		var outputCard;
 		
-		if (currConversation.Summary && (currConversation.Summary != 'NULL'))
+		if (currConversation.summary && (currConversation.summary != 'NULL'))
 		{
 			cardText = "Summary: ";
-			if (currConversation.Summary.length > 60)
-			 	cardText += currConversation.Summary.substring(0, 61) + "...";
+			if (currConversation.summary.length > 60)
+			 	cardText += currConversation.summary.substring(0, 61) + "...";
 			else
-			 	cardText += currConversation.Summary;
+			 	cardText += currConversation.summary;
 		}
 		else 
 		{
 			cardText = "Notes: ";
-			if (currConversation.Notes.length > 60)
-				cardText += currConversation.Notes.substring(0, 61) + "...";
+            if (!currConversation.notes)
+                cardText += "N/A";
+			else if (currConversation.notes.length > 60)
+				cardText += currConversation.notes.substring(0, 61) + "...";
 			else
-				cardText += currConversation.Notes;
+				cardText += currConversation.notes;
 		}
 
 		outputCard = new builder.ThumbnailCard(session)

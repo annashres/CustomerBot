@@ -739,9 +739,12 @@ bot.dialog('/fetchConversation',
 [
     function(session, args, next)
     {
-
         if (session.message.address.channelId != 'email')
         {
+            session.conversationData.interactiveMode = true;
+            session.conversationData.company = null;
+            session.conversationData.customerGuid = null;
+
             if (session.conversationData.pinExists == false)
                 session.replaceDialog('/auth')
         
@@ -802,73 +805,85 @@ bot.dialog('/fetchConversation',
         if(!session.dialogData.inputCompany)
             session.dialogData.inputCompany = results.response;
 
+        session.beginDialog('/findCompanyMatches', session.dialogData.inputCompany);
         // Find input company in feedback database
-        var sqlCompanyQuery = "SELECT DISTINCT company FROM feedbacks;";
+        // var sqlCompanyQuery = "SELECT DISTINCT company FROM feedbacks;";
 
-        dbconnection.execute({
-            query: sqlCompanyQuery
-        }).then (function (results)
-        {
-            var companies = results
-            var searchOptions = 
-            {
-                shouldSort: true,
-                includeMatches: true,
-                minMatchCharLength: 1,
-                keys: ["company"],
-                threshold: 0.4
-            }
-            var fuse = new Fuse(companies, searchOptions);
+        // dbconnection.execute({
+        //     query: sqlCompanyQuery
+        // }).then (function (results)
+        // {
+        //     var companies = results
+        //     var searchOptions = 
+        //     {
+        //         shouldSort: true,
+        //         includeMatches: true,
+        //         minMatchCharLength: 1,
+        //         keys: ["company"],
+        //         threshold: 0.4
+        //     }
+        //     var fuse = new Fuse(companies, searchOptions);
 
-            // Search database for input company name and companies with matching names
-            var result = fuse.search(session.dialogData.inputCompany);
-            var matches = result.map(function (entry) {return entry.item.company;});
-            console.log(matches);
+        //     // Search database for input company name and companies with matching names
+        //     var result = fuse.search(session.dialogData.inputCompany);
+        //     var matches = result.map(function (entry) {return entry.item.company;});
+        //     console.log(matches);
 
-            if (matches.length == 0)
-            {
-                session.send(`There is no record of '${session.dialogData.inputCompany}' in the database. Please refine your search or try another company.`);
-                session.endDialog("Enter OK to return to home screen and try again.");
-            }    
-            else if (matches.length > 1)
-            {
-                session.send(`I found a few companies that match '${session.dialogData.inputCompany}`);
-                var prompt = "Please select one company from the choices below:\n\n";
-                builder.Prompts.choice(session, prompt, matches);
-            }
-            else if (matches.length == 1)
-            {
-                var prompt = `Found matching company '${matches}'. Retrieving last 10 conversations...`;
-                session.send(prompt);
-                session.dialogData.inputCompany = matches;
-                next();
-            }
-        }, function (err)
-        {
-            console.error("Could not search database for provided company name:", err);
-        });
+        //     if (matches.length == 0)
+        //     {
+        //         session.send(`There is no record of '${session.dialogData.inputCompany}' in the database. Please refine your search or try another company.`);
+        //         session.endDialog("Enter OK to return to home screen and try again.");
+        //     }    
+        //     else if (matches.length > 1)
+        //     {
+        //         session.send(`I found a few companies that match '${session.dialogData.inputCompany}`);
+        //         var prompt = "Please select one company from the choices below:\n\n";
+        //         builder.Prompts.choice(session, prompt, matches);
+        //     }
+        //     else if (matches.length == 1)
+        //     {
+        //         var prompt = `Found matching company '${matches}'. Retrieving last 10 conversations...`;
+        //         session.send(prompt);
+        //         session.dialogData.inputCompany = matches;
+        //         next();
+        //     }
+        // }, function (err)
+        // {
+        //     console.error("Could not search database for provided company name:", err);
+        // });
     },
     function (session, results)
     {
-        if (results.response)
-            session.dialogData.inputCompany = results.response.entity;
-
-        var conversationListQuery = `SELECT TOP 10 [id], [Name],[Authors],[Company],[Contact],[Product],[Notes],[Summary],[Tags],[Blockers],[ProjectStage],[updatedAt] 
-                                     FROM [dbo].[feedbacks] 
-                                     WHERE [Company] = '${session.dialogData.inputCompany}'
+        // if (results.response)
+        //     session.dialogData.inputCompany = results.response.entity;
+        var conversationListQuery = `SELECT TOP 10 [conversation_id] AS id, [creator_alias] AS [Name],[authors],[company], [customer_contacts] AS [Contact], [service_discussed_text] AS [Product],[notes],[summary], [search_tags] AS [Tags], [blocker_tags] AS [Blockers], [project_stage_tags] AS [ProjectStage],[update_time] AS [updatedAt]
+                                     FROM [dbo].[conversationDetails] 
+                                     WHERE [ms_customer_guid] = '${session.conversationData.customerGuid}'
                                      ORDER BY [updatedAt] DESC`;
 
-        dbconnection.execute({
+        dbconnection.execute('feedbackDb', {
             query: conversationListQuery
         }).then (function (results)
         {
-            var conversations = botdisplay.renderSummaryCard(session, builder, results);
+            if (results.length)
+            {
+                var initialOutput = `Found matching company ${session.conversationData.company}. Retrieving last 10 conversations ...`;
+                session.send(initialOutput);
 
-            var outputCards = new builder.Message(session)
-                .attachmentLayout(builder.AttachmentLayout.carousel)
-                .attachments(conversations);
+                var conversations = botdisplay.renderSummaryCard(session, builder, results);
 
-            session.send(outputCards);
+                var outputCards = new builder.Message(session)
+                    .attachmentLayout(builder.AttachmentLayout.carousel)
+                    .attachments(conversations);
+
+                session.send(outputCards);
+            }
+            else 
+            {
+                var emptyResponse = `There are no conversations with ${session.conversationData.company} saved in the archive.\n\n`;
+                session.send(emptyResponse);
+                session.endDialog("Enter OK to return to the home screen.");
+            }
 
         }, function (err)
         {
@@ -1873,6 +1888,7 @@ function storeConversation(session,inputConversation)
         customerGuid = customerGuid.replace(/"/g,'');        
         var companyName = encodeURIComponent(inputConversation.company.trim());
         var webLink = `http://azuswdreamdata:3000/#/customer/${customerGuid}/name/${companyName}/conversation/${conversationId}`;
+        var dashboardLink = process.env.DashboardUrl;
         var signoffMessages = [`*Alone we can do so little, together we can do so much.* -Helen Keller`, 
         `*In teamwork, silence isn’t golden. It’s deadly.* -Mark Sanborn`,
         `*A single leaf working alone provides no shade.* -Chuck Page`, 
@@ -1880,7 +1896,7 @@ function storeConversation(session,inputConversation)
         `*A successful team is a group of many hands but of one mind* -Bill Bethel`];
 
         var message = "I have saved your conversation to the archive.\n\n";
-        message += `You can [view or edit the conversation using my web interface](${webLink}).\n\n`
+        message += `You can [view archived conversations on the conversation dashboard](${dashboardLink}).\n\n`
         message+= "`---`\n\n 💡 ";
         message += signoffMessages[Math.floor(Math.random()*signoffMessages.length)];
         
