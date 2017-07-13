@@ -65,7 +65,7 @@ if (process.env.DB_SERVER)
         "requestTimeout": 300000,
         "connectionTimeout": 300000,
         
-        options: {encrypt: true}
+        "options": {"encrypt": true}
     }
 
     var feedbackConfig = 
@@ -78,7 +78,7 @@ if (process.env.DB_SERVER)
         "requestTimeout": 300000,
         "connectionTimeout": 300000,
 
-        options: {encrypt: true}
+        "options": {"encrypt": true}
     }
 
     dbconnection.setDefaultConfig(config);
@@ -330,6 +330,11 @@ bot.dialog('/selectAction',
 [
     function(session, args, next)
     {
+        if (session.userData.alias === 'vinsonyu'){
+            var message = `Hello Vin💩`;
+            session.send(message);
+        }
+
         if (session.message.address.channelId != "email" && session.conversationData.pinExists == false) {
             session.replaceDialog('/auth');
         }
@@ -1238,7 +1243,10 @@ bot.dialog('/selectCompany', [
     {
         if (results.response)
         {
-            session.conversationData.company = results.response.entity;
+            var inputResponse = results.response.entity;
+            var promptRegex = /[*]*{Found a few matching companies. Select one of the companies below:}[*]*[\S.]*/ig
+            inputResponse = inputResponse.replace(promptRegex, '');
+            session.conversationData.company = inputResponse;
             getCompanyGUID(session, session.conversationData.company);
         }
         else if (session.conversationData.company && (!session.conversationData.customerGuid))
@@ -1268,8 +1276,14 @@ bot.dialog('/findCompanyMatches', [
     {
         if (args)
         {
-            session.dialogData.inputCompany = args.trim();
-            session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[\r\n]+/g,'');
+            var inputResponse = args.trim()
+            var promptRegex = /[*]*{Found a few matching companies. Select one of the companies below:}[*]*[\S.]*/ig
+            inputResponse = inputResponse.replace(promptRegex, '');
+            session.dialogData.inputCompany = inputResponse.trim();
+            console.log("the company is:", inputResponse);
+            //TODO: fix doesn't get rid of new line above
+            session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[\r\n]+/gm,'');
+            console.log("the company2 is:", inputResponse);
             next();
         }
         else 
