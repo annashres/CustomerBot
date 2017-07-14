@@ -1137,6 +1137,7 @@ bot.dialog('/displayEditableCard',
              else if (session.message.value.action === "submit")
              {
                 var selectedProducts="";
+                var inputCompany;
                 session.conversationData.contact = session.message.value.contact;
                 //session.conversationData.company = session.message.value.company;
                 session.conversationData.authors = session.message.value.authors;
@@ -1161,9 +1162,14 @@ bot.dialog('/displayEditableCard',
                 selectedProducts = selectedProducts.replace(/,$/g, "");
                 session.conversationData.product = selectedProducts;
 
-                if ((typeof session.conversationData.companyMatches != "undefined") && (!session.conversationData.customerGuid) && (session.conversationData.companyMatches.includes(session.message.value.company)))
+                inputCompany = session.message.value.company;
+                var promptRegex = /[*]*{Found a few matching companies. Select one of the companies below:}[*]*[\S.]*/ig
+                inputCompany = inputCompany.replace(promptRegex, '');
+                inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
+           
+                if ((typeof session.conversationData.companyMatches != "undefined") && (!session.conversationData.customerGuid) && (session.conversationData.companyMatches.includes(inputCompany)))
                 {
-                    var companyIndex = session.conversationData.companyMatches.indexOf(session.message.value.company);
+                    var companyIndex = session.conversationData.companyMatches.indexOf(inputCompany);
                     session.conversationData.company = session.conversationData.companyMatches[companyIndex];
                     session.message.value = null;
                     session.beginDialog('/selectCompany');
@@ -1243,10 +1249,7 @@ bot.dialog('/selectCompany', [
     {
         if (results.response)
         {
-            var inputResponse = results.response.entity;
-            var promptRegex = /[*]*{Found a few matching companies. Select one of the companies below:}[*]*[\S.]*/ig
-            inputResponse = inputResponse.replace(promptRegex, '');
-            session.conversationData.company = inputResponse;
+            session.conversationData.company = results.response.entity;
             getCompanyGUID(session, session.conversationData.company);
         }
         else if (session.conversationData.company && (!session.conversationData.customerGuid))
@@ -1276,14 +1279,8 @@ bot.dialog('/findCompanyMatches', [
     {
         if (args)
         {
-            var inputResponse = args.trim()
-            var promptRegex = /[*]*{Found a few matching companies. Select one of the companies below:}[*]*[\S.]*/ig
-            inputResponse = inputResponse.replace(promptRegex, '');
-            session.dialogData.inputCompany = inputResponse.trim();
-            console.log("the company is:", inputResponse);
-            //TODO: fix doesn't get rid of new line above
-            session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[\r\n]+/gm,'');
-            console.log("the company2 is:", inputResponse);
+            session.dialogData.inputCompany = args.trim();
+            session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[\r\n]+/g,'');
             next();
         }
         else 
@@ -1687,12 +1684,19 @@ function parseConversationTemplate(session, inputText)
         }
         else if ((token != endToken) && (templateTokens[token].search(/company[*]?:/i) != -1))
         {
+            // Parse out prompt text
+            var promptRegex = /[*]*{Found a few matching companies. Select one of the companies below:}[*]*[\S.]*/ig
+            if (templateTokens[token+1].search(promptRegex) != -1)
+            {
+                inputCompany = templateTokens[token+1];
+                inputCompany = inputCompany.replace(promptRegex, '');
+                inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
+            }
             // Ignore input if it's default text
-            if (templateTokens[token+1].search(/{company name}/i) == -1)
+            else if (templateTokens[token+1].search(/{company name}/i) == -1)
             {
                 inputCompany = templateTokens[token+1];
                 inputCompany = inputCompany.replace(/[__\r\n]+/g,'');
-                //session.conversationData["company"] = inputCompany;
             }
         }
         else if ((token != endToken) && (templateTokens[token].search(/contact[(s)*]*?:/i) != -1))
