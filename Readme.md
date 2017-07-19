@@ -6,7 +6,7 @@ This bot has been created using [Microsoft Bot Framework](https://dev.botframewo
 MAAV-1 is designed to record notes and insights from the conversations Microsoft employees have with customers. The goal is to make it easier to disseminate knowledge about Microsoft customers and win as a team.
 
 ## High-level Architecture
-![MAAV-1 Architecture](Maav1Architecture.JPG)
+![MAAV-1 Architecture](Maav1Architecture.jpg)
 
 ## Deploy a new Bot instance
 1. Navigate to the [Azure portal](https://portal.azure.com). Create a new 'Bot service' instance.
