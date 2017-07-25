@@ -33,6 +33,8 @@ function initializeConversationObject(inputConversation)
     	conversationObject["projectstage"]="{Select one of: Pre-POC, POC, Production}";
     if (!conversationObject.blockers)
     	conversationObject["blockers"]="{Enter a comma-separated list of blockers if any}";
+    if (!conversationObject.satisfaction)
+    	conversationObject["satisfaction"]="{Select a customer satisfaction level from 1-4 with 4 being very satisfied and 1 being very dissatisfied. Enter 0 for unknown}";
     if ((!conversationObject.company) && (!conversationObject.companymatches))
         conversationObject["company"]="**{Enter company name here}**";
     else if ((!conversationObject.company) && conversationObject.companymatches)
@@ -128,6 +130,12 @@ function renderCard(session, builder, inputConversation, inputActions=null)
                 	"wrap": "true"
                 },
                 {
+                	"type": "TextBlock",
+                	"text": `Customer satisfaction:\n\n ${conversationObject.satisfaction}`,
+                	"separation": "strong",
+                	"wrap": "true"
+                },
+                {
                     "type": "TextBlock",
                     "text": `Tags:\n\n ${conversationObject.tags}`,
                     "separation": "strong",
@@ -190,6 +198,13 @@ function renderEditableCard(session, builder, inputConversation)
     var prePOCSelected = (conversationObject.projectstage.match(/pre-poc/i) != null);
     var POCSelected = (conversationObject.projectstage.match(/poc/i) != null);
     var productionSelected = (conversationObject.projectstage.match(/production/i) != null);
+
+    var VSSelected = (conversationObject.satisfaction.match(/4/i) != null);
+    var SSSelected = (conversationObject.satisfaction.match(/3/i) != null);
+    var SDSelected = (conversationObject.satisfaction.match(/2/i) != null);
+    var VDSelected = (conversationObject.satisfaction.match(/1/i) != null);
+    var USelected = (conversationObject.satisfaction.match(/0/i) != null);
+
 
     var inputCard = new builder.Message(session)
     .addAttachment({
@@ -319,7 +334,46 @@ function renderEditableCard(session, builder, inputConversation)
 				          "isSelected": productionSelected
 				        }
 			      	]
-    			},        
+    			},
+                {
+                    "type": "TextBlock",
+                    "text": `Customer Satisfaction:`
+                },
+                {
+      				"type": "Input.ChoiceSet",
+      				"id": "satisfaction",
+      				"style": "compact",
+      				"isMultiSelect": false,
+      				"value": `${conversationObject.satisfaction}`,
+      				"choices":
+      				[
+				        {
+				          "title": "4 - Very Satisfied",
+				          "value": "4",
+				          "isSelected": VSSelected
+				        },
+				        {
+				          "title": "3 - Somewhat Satisfied",
+				          "value": "4",
+				          "isSelected": SSSelected
+				        },
+				        {
+				          "title": "2 - Somewhat Dissatisfied",
+				          "value": "3",
+				          "isSelected": SDSelected
+				        },
+				        {
+				          "title": "1 - Very Dissatisfied",
+				          "value": "2",
+				          "isSelected": VDSelected
+				        },
+				        {
+				          "title": "0 - Unknown",
+				          "value": "0",
+				          "isSelected": USelected
+				        },
+			      	]
+    			},            
                 {
                 	"type": "TextBlock",
                 	"text": `Blocker(s):`
@@ -462,6 +516,7 @@ function renderText(prompt="", inputConversation)
     outputMessage += `PRODUCT(S)*:\n\n${conversationObject.product}\n\n---\n`;
     outputMessage += `PROJECT STAGE:\n\n${conversationObject.projectstage}\n\n---\n`;
     outputMessage += `BLOCKER(S):\n\n${conversationObject.blockers}\n\n---\n`;
+    outputMessage += `SATISFACTION:\n\n${conversationObject.satisfaction}\n\n---\n`;
     outputMessage += `TAGS:\n\n${conversationObject.tags}\n\n---\n`;
     outputMessage += `SUMMARY:\n\n${conversationObject.summary}\n\n---\n`;
     outputMessage += `NOTES*:\n\n${conversationObject.notes}`;

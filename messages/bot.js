@@ -570,6 +570,51 @@ bot.dialog('/interactiveDataEntry',
             session.send(new builder.Message(session).addAttachment(skipButton));
         }       
     },
+
+
+    function (session, results, next)
+    {
+        var forwardInput = session.dialogData.forwardInput;
+        var currentStep = session.dialogData['BotBuilder.Data.WaterfallStep'];
+        
+        // This forwards the button click for product selection to the appropriate handler
+        if (typeof forwardInput != "undefined" && (currentStep != forwardInput) && (forwardInput != null))
+            next();
+        else if (typeof forwardInput != "undefined" && (currentStep == forwardInput))
+        {
+            if (session.message.text)
+            {
+                if (session.message.text == "Skip")
+                    session.conversationData["satisfaction"] = "{Select a customer satisfaction level from 1-4 with 4 being very satisfied and 1 being very dissatisfied. Enter 0 for unknown}";
+                else
+                    session.conversationData["satisfaction"] = session.message.text;
+
+                session.dialogData.forwardInput = null;
+                next();
+            }
+        }
+        else
+        {
+            session.conversationData.notes = results.response;
+            session.send("How satisfied is the customer?");
+           
+            var satOptions = new builder.ThumbnailCard(session)
+                .title("Customer Satifaction Options")
+                .buttons([
+                    builder.CardAction.imBack(session, "Skip", "Skip this question"),
+                    builder.CardAction.imBack(session, "4", "4 - Very Satisfied"),
+                    builder.CardAction.imBack(session, "3", "3 - Somewhat Satisfied"),
+                    builder.CardAction.imBack(session, "2", "2 - Somewhat Dissatisfied"),
+                    builder.CardAction.imBack(session, "1", "1 - Very Dissatisfied"),
+                    builder.CardAction.imBack(session, "0", "0 - Unknown")
+
+                ]);
+
+            session.dialogData["forwardInput"] = currentStep;
+            session.send(new builder.Message(session).addAttachment(satOptions));
+        }        
+    },
+
     function(session, results, next)
     {
         var forwardInput = session.dialogData.forwardInput;
@@ -612,6 +657,8 @@ bot.dialog('/interactiveDataEntry',
             session.conversationData["projectstage"] = null;
         if (session.conversationData.blockers == "{Enter a comma-separated list of blockers if any}")
             session.conversationData["blockers"] = null;
+        if (session.conversationData.satisfaction == "{Select a customer satisfaction level from 1-4 with 4 being very satisfied and 1 being very dissatisfied. Enter 0 for unknown}")
+            session.conversationData["satisfaction"] = null;
         if (session.conversationData.tags == "{Enter a comma-separated list of tags if any}")
             session.conversationData["tags"] = null;
 
@@ -861,7 +908,7 @@ bot.dialog('/fetchConversation',
     {
         // if (results.response)
         //     session.dialogData.inputCompany = results.response.entity;
-        var conversationListQuery = `SELECT TOP 10 [conversation_id] AS id, [creator_alias] AS [Name],[authors],[company], [customer_contacts] AS [Contact], [service_discussed_text] AS [Product],[notes],[summary], [search_tags] AS [Tags], [blocker_tags] AS [Blockers], [project_stage_tags] AS [ProjectStage],[update_time] AS [updatedAt]
+        var conversationListQuery = `SELECT TOP 10 [conversation_id] AS id, [creator_alias] AS [Name],[authors],[company], [customer_contacts] AS [Contact], [service_discussed_text] AS [Product],[notes],[summary], [search_tags] AS [Tags], [blocker_tags] AS [Blockers], [project_stage_tags] AS [ProjectStage], [satisfaction] AS [Satisfaction], [update_time] AS [updatedAt]
                                      FROM [dbo].[conversationDetails] 
                                      WHERE [ms_customer_guid] = '${session.conversationData.customerGuid}'
                                      ORDER BY [updatedAt] DESC`;
@@ -1146,6 +1193,7 @@ bot.dialog('/displayEditableCard',
                 session.conversationData.summary = session.message.value.summary;
                 session.conversationData.blockers = session.message.value.blockers;
                 session.conversationData.projectstage = session.message.value.projectstage;
+                session.conversationData.satisfaction = session.message.value.satisfaction;
 
                 if (session.message.value.ProductVM == "true")
                     selectedProducts += "SQL VM,";
@@ -1345,7 +1393,9 @@ bot.dialog('/confirm', [
                 session.conversationData.blockers = null;
             if (session.conversationData.projectstage == "{Select one of: Pre-POC, POC, Production}")
                 session.conversationData.projectstage = null;
-
+            if (session.conversationData.satisfaction == "{Select a customer satisfaction level from 1-4 with 4 being very satisfied and 1 being very dissatisfied. Enter 0 for unknown}")
+                session.conversationData["satisfaction"] = null;
+            
             if (session.conversationData.saveCustomerEmail)
                 session.beginDialog('/storeEmailDomain');
             storeConversation(session, session.conversationData);
@@ -1427,6 +1477,37 @@ bot.dialog('/konami', [
         session.replaceDialog('/home');
     }
 ]).triggerAction({ matches: /^UUDDLRLRBA/i});
+
+//Bot Analytics
+
+//answer queries 
+// bot.dialog('/query', [
+ 
+//     function(session)
+//     {
+//         builder.Prompts.text(session, 'Query the Database');
+//     },
+//     function (session, results)
+//     {
+//         var sqlQuery = results.response;
+        
+//         dbconnection.execute({
+//             query: sqlQuery
+//         }).then (function (results)
+//         {
+//             console.log("results are: ", results);
+            
+//             session.endDialog('Resutls %s!', results[0].Authors);
+  
+//         }, function (err)
+//         {
+//             console.error(`Query didn't work`, err);
+//         });   
+
+//     }
+
+
+// ]).triggerAction({ matches: /^\/query/i });
 
 // Check if text is email
 function isEmail(inputText)
@@ -1645,7 +1726,7 @@ function parseConversationTemplate(session, inputText)
 {
     console.log('parsing the conversation template');
     var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
-    var conversationTemplateRegex = /(^author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:|blocker[(s)]*?:|projectstage:|project stage:)/im;
+    var conversationTemplateRegex = /(^author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:|blocker[(s)]*?:|projectstage:|project stage:|satisfaction:|customer satisfaction:)/im;
 
     // Parse email signatures out of input text
     var templateTokens = inputText.replace(emailSignatureRegex, '');
@@ -1773,7 +1854,17 @@ function parseConversationTemplate(session, inputText)
                 session.conversationData["projectstage"] = inputStage;
             }
         }
-    }
+        else if ((token != endToken) && (templateTokens[token].search(/satisfaction:|customer satisfaction:/i) != -1))
+        {
+            // Ignore input if it's default text
+            if (templateTokens[token+1].search(/{Select a customer satisfaction level from 1-4 with 4 being very satisfied and 1 being very dissatisfied. Enter 0 for unknown}/i) == -1)
+            {
+                var inputSat = templateTokens[token+1];
+                inputSat = inputSat.replace(/[__\r\n]+/g,'');
+                session.conversationData["satisfaction"] = inputSat;
+            }
+        } 
+   }
 
     // Get matches for input company if a company hasn't been selected already
     if ((typeof session.conversationData.companyMatches != "undefined") && (!session.conversationData.customerGuid) && (session.conversationData.companyMatches.includes(inputCompany)))
@@ -1883,20 +1974,22 @@ function storeConversation(session,inputConversation)
         convTags = null;
 
     // Initialize variables that will be written to conversation table
-    var creator_alias, customerGuid, convNotes, convSummary;
-    creator_alias = customerGuid = convNotes = convSummary = null;
+    var creator_alias, customerGuid, convNotes, convSummary, convSat;
+    creator_alias = customerGuid = convNotes = convSummary = convSat= null;
 
     if (session.userData.alias)
         creator_alias = JSON.stringify(session.userData.alias);
     if (inputConversation.customerGuid)
         customerGuid = JSON.stringify(inputConversation.customerGuid);
+    if (inputConversation.satisfaction)
+        convSat = JSON.stringify(inputConversation.satisfaction);
     if (inputConversation.notes)
         convNotes = "N'" + inputConversation.notes.replace(/'/g,"''") + "'";
     if (inputConversation.summary)
         convSummary = "N'" + inputConversation.summary.replace(/'/g,"''") + "'";
 
     var insertConversationQuery = `EXEC dbo.usp_insert_conversation_from_bot @user=${creator_alias}, @authors=${authorsList}, @ms_customer_guid=${customerGuid}, 
-        @service_discussed = ${serviceId}, @notes=${convNotes}, @summary=${convSummary}, @customer_contacts=${contactsList}, @tags=${convTags}`;
+        @service_discussed = ${serviceId}, @notes=${convNotes}, @summary=${convSummary}, @customer_contacts=${contactsList}, @satisfaction=${convSat}, @tags=${convTags}`;
 
     dbconnection.execute('feedbackDb',{
         query: insertConversationQuery        
