@@ -758,7 +758,7 @@ bot.dialog('/batchParser',
             session.conversationData["contact"] = companyContacts;
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
 
-            //TODO: error here too
+            //TODO: error here too?
             if (companyEmailDomain)
                 session.beginDialog('/findCompanyFromEmail', companyEmailDomain);
             else {
@@ -1346,12 +1346,11 @@ bot.dialog('/findCompanyMatches', [
     },
     function (session, results, next)
     {
-        console.log("got to next")
         if (results.response && (!session.dialogData.inputCompany))
             session.dialogData.inputCompany = results.response;
 
         //session.sendTyping();
-        console.log("getCompanyMatches");
+        console.log(session.dialogData.inputCompany);
         getCompanyMatches(session, session.dialogData.inputCompany);        
     }
 ]);
