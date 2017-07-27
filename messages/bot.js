@@ -1737,6 +1737,7 @@ function getCompanyGUID(session, inputCompany)
 //Parse conversation template into session variable
 function parseConversationTemplate(session, inputText)
 {
+    //todo: ending here
     console.log('parsing the conversation template');
     var emailSignatureRegex = /(^[\s]*--*[\s]*[a-z \.]*\w+$|^[\s]*best[\s,!\w]*\w+$|^[\s]*regards[\s,!\w]*\w+$|^[\s]*thanks[\s,!\w]*\w+$|^[\s]*cheers[\s,!\w]*\w+$|^[\s]*sent from [\w' ]+$)/im
     var conversationTemplateRegex = /(^author[(s)*]*?:|company[*]?:|contact[(s)*]*?:|customer contact[(s)*]*?:|product[(s)*]*?:|tags?:|tags?[(optional)]+:|notes[*]?:|summary:|summary[(optional)]+:|blocker[(s)]*?:|projectstage:|project stage:|satisfaction:|customer satisfaction:)/im;
@@ -1882,16 +1883,23 @@ function parseConversationTemplate(session, inputText)
     // Get matches for input company if a company hasn't been selected already
     if ((typeof session.conversationData.companyMatches != "undefined") && (!session.conversationData.customerGuid) && (session.conversationData.companyMatches.includes(inputCompany)))
     {
+        console.log('if');
         var companyIndex = session.conversationData.companyMatches.indexOf(inputCompany);
         session.conversationData.company = session.conversationData.companyMatches[companyIndex];
         session.beginDialog('/selectCompany');
     }
-    else if (!session.conversationData.customerGuid)
+    else if (!session.conversationData.customerGuid){
+        console.log('else if 1');
         session.beginDialog('/findCompanyMatches', inputCompany);
-    else if (session.conversationData.company != inputCompany)
+    }
+    else if (session.conversationData.company != inputCompany) {
+        console.log('else if 2');
         session.beginDialog('/findCompanyMatches', inputCompany); 
-    else
+    }
+    else {
+        console.log('else');
         session.beginDialog('/selectCompany');   
+    }
 }
 
 //Write data to database
