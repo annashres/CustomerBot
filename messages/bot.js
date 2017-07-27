@@ -757,10 +757,17 @@ bot.dialog('/batchParser',
             //session.conversationData["company"] = companyName;
             session.conversationData["contact"] = companyContacts;
             session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
+
+            //TODO: error here too
             if (companyEmailDomain)
                 session.beginDialog('/findCompanyFromEmail', companyEmailDomain);
             else
-                session.beginDialog('/findCompanyMatches', companyName);
+
+            //TODO: think the error is here
+                //session.beginDialog('/findCompanyMatches', companyName);
+                session.conversationData["authors"] = msftContacts;
+                session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
+
         }
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
@@ -768,7 +775,8 @@ bot.dialog('/batchParser',
             console.log('parsing email response template');
             parseConversationTemplate(session, session.message.text);
         }
-        // Parse input conversation template
+        // Parse input conversation template (teams only?)
+        
         else
         {
             session.sendTyping();
@@ -1514,6 +1522,8 @@ function isEmail(inputText)
 {
     var hasSender = (inputText.search(/from:/i) != -1);
     var hasRecipient = (inputText.search(/to:[\s+\w]+/i) != -1);
+
+    //TODO does it need a subject?
     var hasSubject = (inputText.search(/subject:/i) != -1);
 
     if (hasSender && hasRecipient && hasSubject)
@@ -1623,6 +1633,7 @@ function getCompanyFromEmail(session, inputEmailDomain)
                 session.conversationData.saveCustomerEmail = true;
                 session.conversationData.inputEmailDomain = inputEmailDomain;
 
+                //sends to "what companay did you all speak with"
                 var companyName = inputEmailDomain.split('.')[0];
                 session.replaceDialog('/findCompanyMatches', companyName);
             }
