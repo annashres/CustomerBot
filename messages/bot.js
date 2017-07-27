@@ -1351,7 +1351,7 @@ bot.dialog('/findCompanyMatches', [
             session.dialogData.inputCompany = results.response;
 
         //session.sendTyping();
-        consoloe.log("getCompanyMatches");
+        console.log("getCompanyMatches");
         getCompanyMatches(session, session.dialogData.inputCompany);        
     }
 ]);
