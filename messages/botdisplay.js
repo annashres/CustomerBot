@@ -564,10 +564,12 @@ function renderEmailConversation(inputEmail)
 			outputEmail+= "From: ";
 			outputEmail+= inputEmailTokens[i+1].trim();
 			outputEmail+= "\n\n";
+            console.log("from");
 		}
 		else if (inputEmailTokens[i] == "Sent:")
 		{
 			//Discard this information (needed to deal with Outlook default formatting for emails)
+            console.log("sent");
 		}
 		else if (inputEmailTokens[i] == "To: ")
 		{
@@ -582,6 +584,7 @@ function renderEmailConversation(inputEmail)
 		
 			outputEmail+= respondents;
 			outputEmail+= "\n\n";
+            console.log("to");
 		}
 		else if (inputEmailTokens[i] == "Subject:")
 		{
@@ -614,8 +617,10 @@ function renderEmailConversation(inputEmail)
 
 			outputEmail+= subjectBody;
 			outputEmail+= "\n\n";
+            console.log("subjet");
 		}
 	}
+    console.log("return", outputEmail);
 	return outputEmail;
 }
 
