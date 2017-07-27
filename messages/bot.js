@@ -761,13 +761,14 @@ bot.dialog('/batchParser',
             //TODO: error here too
             if (companyEmailDomain)
                 session.beginDialog('/findCompanyFromEmail', companyEmailDomain);
-            else
-
+            else {
             //TODO: think the error is here
                 //session.beginDialog('/findCompanyMatches', companyName);
                 session.conversationData["authors"] = msftContacts;
                 session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
-
+                console.log('else here')
+                next();
+            }
         }
         // Parse response to email conversation template
         else if ((isEmail(session.message.text)) && (isValidTemplate(session.message.text)))
