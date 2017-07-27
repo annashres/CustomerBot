@@ -1350,6 +1350,7 @@ bot.dialog('/findCompanyMatches', [
             session.dialogData.inputCompany = results.response;
 
         session.sendTyping();
+        consoloe.log("getCompnayMatches");
         getCompanyMatches(session, session.dialogData.inputCompany);        
     }
 ]);
@@ -1890,6 +1891,7 @@ function parseConversationTemplate(session, inputText)
     }
     else if (!session.conversationData.customerGuid){
         console.log('else if 1');
+        console.log(inputCompany);
         session.beginDialog('/findCompanyMatches', inputCompany);
     }
     else if (session.conversationData.company != inputCompany) {
