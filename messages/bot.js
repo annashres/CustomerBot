@@ -765,6 +765,7 @@ bot.dialog('/batchParser',
 
             //TODO: think the error is here
                 //session.beginDialog('/findCompanyMatches', companyName);
+                console.log("got here");
                 session.conversationData["authors"] = msftContacts;
                 session.conversationData["notes"] = botdisplay.renderEmailConversation(session.message.text);
 
