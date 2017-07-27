@@ -1337,10 +1337,8 @@ bot.dialog('/findCompanyMatches', [
     {
         if (args)
         {
-            console.log('findcompanymatches)')
             session.dialogData.inputCompany = args.trim();
             session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[\r\n]+/g,'');
-            console.log(session.dialogData.inputCompany)
             next();
         }
         else 
@@ -1348,11 +1346,12 @@ bot.dialog('/findCompanyMatches', [
     },
     function (session, results, next)
     {
+        console.log("got to next")
         if (results.response && (!session.dialogData.inputCompany))
             session.dialogData.inputCompany = results.response;
 
-        session.sendTyping();
-        consoloe.log("getCompnayMatches");
+        //session.sendTyping();
+        consoloe.log("getCompanyMatches");
         getCompanyMatches(session, session.dialogData.inputCompany);        
     }
 ]);
