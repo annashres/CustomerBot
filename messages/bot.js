@@ -1337,8 +1337,10 @@ bot.dialog('/findCompanyMatches', [
     {
         if (args)
         {
+            console.log('findcompanymatches)')
             session.dialogData.inputCompany = args.trim();
             session.dialogData.inputCompany = session.dialogData.inputCompany.replace(/[\r\n]+/g,'');
+            console.log(session.dialogData.inputCompany)
             next();
         }
         else 
@@ -1891,7 +1893,6 @@ function parseConversationTemplate(session, inputText)
     }
     else if (!session.conversationData.customerGuid){
         console.log('else if 1');
-        console.log(inputCompany);
         session.beginDialog('/findCompanyMatches', inputCompany);
     }
     else if (session.conversationData.company != inputCompany) {
